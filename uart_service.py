@@ -35,8 +35,9 @@ class UARTComm:
     def read_response(self):
         if self.ser is None:
             raise RuntimeError("UART not connected")
-        response = self.ser.readline().decode("utf-8").strip()
-        return response
+        response = self.ser.readline()
+        print("Raw bytes:", response)
+        return response.decode("utf-8", errors="ignore").strip()
 
     def close(self):
         if self.ser is not None and self.ser.is_open:
