@@ -1,0 +1,15 @@
+{
+    "home": {
+        "custom_config": "Custom Configurations",
+        "monitor": "Monitor Real-Time Data",
+        "playsong": "Play a Song",
+        "preset_config": "Preset Configurations"
+    },
+    "midi": {
+        "Taps.mid": "Playing Taps",
+        "hot_to_go.mid": "Playing hot_to_go",
+        "lava_chicken.mid": "Playing lava_chicken",
+        "rickroll.mid": "Playing rickroll",
+        "rickroll_squish.mid": "Playing rickroll_squish"
+    }
+}
