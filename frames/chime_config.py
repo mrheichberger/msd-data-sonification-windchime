@@ -6,7 +6,7 @@ import os
 class ChimeConfigFrame(ctk.CTkFrame):
     def __init__(self, parent, controller):
         super().__init__(parent)
-
+        
         self.controller = controller
         self.file_path = "chime_states.json"
 
@@ -16,6 +16,12 @@ class ChimeConfigFrame(ctk.CTkFrame):
         # Store switch variables
         self.chime_states = {}
 
+        button_style = {
+            "fg_color": "#F76902",
+            "hover_color": "#BB4E00",
+            "text_color": "#FFFFFF"
+        }
+        
         # Title
         title = ctk.CTkLabel(self, text="Chime Configuration", font=("Arial", 20))
         title.pack(pady=10)
@@ -46,21 +52,24 @@ class ChimeConfigFrame(ctk.CTkFrame):
         save_btn = ctk.CTkButton(
             button_frame,
             text="Save",
-            command=self.save_states
+            command=self.save_states,
+            **button_style
         )
         save_btn.grid(row=0, column=0, padx=10)
 
         load_btn = ctk.CTkButton(
             button_frame,
             text="Reload",
-            command=self.reload_states
+            command=self.reload_states,
+            **button_style
         )
         load_btn.grid(row=0, column=1, padx=10)
 
         back_btn = ctk.CTkButton(
             button_frame,
             text="Back to Home",
-            command=lambda: controller.show_frame("HomeFrame")
+            command=lambda: controller.show_frame("HomeFrame"),
+            **button_style
         )
         back_btn.grid(row=0, column=2, padx=10)
     # -------------------------
