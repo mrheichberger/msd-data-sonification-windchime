@@ -11,7 +11,7 @@ from frames.chime_config import ChimeConfigFrame
 
 from services.weather_service import WeatherService
 #from services.mood_service import MoodService
-from services.tts_service import generate_lines
+#from services.tts_service import generate_lines
 
 
 class App(ctk.CTk):
@@ -68,6 +68,6 @@ class App(ctk.CTk):
         self.after(1000 * 60 * 20, self.update_weather)
 
 if __name__ == "__main__":
-    generate_lines()
+    #generate_lines()
     app = App()
     app.mainloop()
