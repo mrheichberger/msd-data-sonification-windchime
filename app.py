@@ -10,7 +10,7 @@ from frames.monitor import MonitorFrame
 from frames.chime_config import ChimeConfigFrame
 
 from services.weather_service import WeatherService
-from services.mood_service import MoodService
+#from services.mood_service import MoodService
 from services.tts_service import generate_lines
 
 
@@ -30,7 +30,7 @@ class App(ctk.CTk):
         self.uv = None
 
         self.weather_service = WeatherService()
-        self.mood_service = MoodService()
+        #self.mood_service = MoodService()
 
         if self.weather_service.enabled:
             self.after(100, self.update_weather)
@@ -64,7 +64,7 @@ class App(ctk.CTk):
 
     def update_weather(self):
         self.weather, self.uv = self.weather_service.fetch_weather()
-        self.mood = self.mood_service.calculate_mood(self.weather)
+        #elf.mood = self.mood_service.calculate_mood(self.weather)
         self.after(1000 * 60 * 20, self.update_weather)
 
 if __name__ == "__main__":
