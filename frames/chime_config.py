@@ -35,8 +35,14 @@ class ChimeConfigFrame(ctk.CTkFrame):
         title = ctk.CTkLabel(self, text="Chime Configuration", font=("Arial", 20))
         title.pack(pady=10)
 
+        top_bar = ctk.CTkFrame(self, fg_color="transparent")
+        top_bar.pack(fill="x", pady=5, padx=20)
+
+        label = ctk.CTkLabel(top_bar, text="Scale:", font=("Arial", 14))
+        label.pack(anchor="w")
+        
         self.state_dropdown = ctk.CTkOptionMenu(
-            self,
+            top_bar,
             values=self.state_names,
             variable=self.current_state,
             command=self.change_state,
@@ -51,11 +57,11 @@ class ChimeConfigFrame(ctk.CTkFrame):
 
             text_color="#FFFFFF"
         )
-        self.state_dropdown.pack(pady=10)
+        self.state_dropdown.pack(side="left")
         
         # Frame to hold switches
         switch_frame = ctk.CTkFrame(self)
-        switch_frame.pack(pady=10)
+        switch_frame.pack(pady=15)
         
         # Notes (16 total)
         notes = ["C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", "G4", "G#4", "A4", "A#4", "B4",
