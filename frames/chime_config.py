@@ -9,7 +9,7 @@ class ChimeConfigFrame(ctk.CTkFrame):
 
         self.controller = controller
 
-        os.makedirs("data", exist_ok=True)
+        #os.makedirs("data", exist_ok=True)
         self.file_name = "chime_states.json"
         self.file_path = os.path.join("data", self.file_name)
 
