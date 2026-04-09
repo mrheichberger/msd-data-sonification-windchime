@@ -8,6 +8,7 @@ from frames.preset import PresetConfigFrame
 from frames.mode_selection import ModeSelectionFrame
 from frames.monitor import MonitorFrame
 from frames.chime_config import ChimeConfigFrame
+from frames.weather_mood import WeatherMoodFrame
 
 from services.weather_service import WeatherService
 #from services.mood_service import MoodService
@@ -44,7 +45,8 @@ class App(ctk.CTk):
             EditTimetableConfigFrame,
             ModeSelectionFrame,
             MonitorFrame,
-            ChimeConfigFrame
+            ChimeConfigFrame, 
+            WeatherMoodFrame
         ):
             frame = Frame(self, controller=self)
             self.frames[Frame.__name__] = frame
