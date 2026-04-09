@@ -368,5 +368,23 @@
             "D5": true,
             "D#5": false
         }
+    },
+    "Custom": {
+        "C4": true,
+        "C#4": false,
+        "D4": false,
+        "D#4": false,
+        "E4": false,
+        "F4": true,
+        "F#4": false,
+        "G4": false,
+        "G#4": false,
+        "A4": false,
+        "A#4": true,
+        "B4": false,
+        "C5": false,
+        "C#5": false,
+        "D5": false,
+        "D#5": true
     }
 }
