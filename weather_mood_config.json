@@ -1,0 +1,82 @@
+{
+    "Sunny_<25": {
+        "scale": "Major",
+        "key": "F"
+    },
+    "Sunny_25-50": {
+        "scale": "Major",
+        "key": "E"
+    },
+    "Sunny_50-75": {
+        "scale": "Major",
+        "key": "D"
+    },
+    "Sunny_75+": {
+        "scale": "Major",
+        "key": "C"
+    },
+    "Rainy_75+": {
+        "scale": "Blues",
+        "key": "C"
+    },
+    "Rainy_50-75": {
+        "scale": "Blues",
+        "key": "D"
+    },
+    "Rainy_25-50": {
+        "scale": "Blues",
+        "key": "E"
+    },
+    "Rainy_<25": {
+        "scale": "Blues",
+        "key": "F"
+    },
+    "Cloudy_<25": {
+        "scale": "Pentatonic",
+        "key": "F"
+    },
+    "Cloudy_25-50": {
+        "scale": "Pentatonic",
+        "key": "E"
+    },
+    "Cloudy_50-75": {
+        "scale": "Pentatonic",
+        "key": "D"
+    },
+    "Cloudy_75+": {
+        "scale": "Pentatonic",
+        "key": "C"
+    },
+    "Stormy_<25": {
+        "scale": "Suspended",
+        "key": "F"
+    },
+    "Stormy_25-50": {
+        "scale": "Suspended",
+        "key": "E"
+    },
+    "Stormy_50-75": {
+        "scale": "Suspended",
+        "key": "D"
+    },
+    "Stormy_75+": {
+        "scale": "Suspended",
+        "key": "C"
+    },
+    "Snowy_75+": {
+        "scale": "Minor",
+        "key": "C"
+    },
+    "Snowy_50-75": {
+        "scale": "Minor",
+        "key": "D"
+    },
+    "Snowy_25-50": {
+        "scale": "Minor",
+        "key": "E"
+    },
+    "Snowy_<25": {
+        "scale": "Minor",
+        "key": "F"
+    }
+}
