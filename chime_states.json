@@ -33,7 +33,25 @@
         "C5": false,
         "C#5": false,
         "D5": false,
-        "D#5": false
+        "D#5": false,
+        "C": {
+            "C4": false,
+            "C#4": false,
+            "D4": false,
+            "D#4": false,
+            "E4": false,
+            "F4": false,
+            "F#4": false,
+            "G4": false,
+            "G#4": false,
+            "A4": false,
+            "A#4": false,
+            "B4": false,
+            "C5": false,
+            "C#5": false,
+            "D5": false,
+            "D#5": false
+        }
     },
     "Blues": {
         "C4": true,
