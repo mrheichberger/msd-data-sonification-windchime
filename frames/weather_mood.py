@@ -4,8 +4,8 @@ import os
 
 
 class WeatherMoodFrame(ctk.CTkFrame):
-    def __init__(self, parent, controller):
-        super().__init__(parent)
+    def __init__(self, master, controller):
+        super().__init__(master)
 
         self.controller = controller
 
