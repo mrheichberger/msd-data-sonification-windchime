@@ -18,7 +18,8 @@ class ChimeConfigFrame(ctk.CTkFrame):
             "Minor",
             "Blues",
             "Suspended",
-            "Pentatonic"
+            "Pentatonic",
+            "Custom"
         ]
 
         self.key_names = ["C", "D", "E", "F"]
@@ -27,8 +28,6 @@ class ChimeConfigFrame(ctk.CTkFrame):
         self.current_key = ctk.StringVar(value=self.key_names[0])
 
         self.saved_states = self.load_states()
-
-        # Store switch variables
         self.chime_states = {}
 
         button_style = {
@@ -40,11 +39,11 @@ class ChimeConfigFrame(ctk.CTkFrame):
         # -------------------------
         # TITLE
         # -------------------------
-        title = ctk.CTkLabel(self, text="Chime Configuration", font=("Arial", 20))
-        title.pack(pady=10)
+        ctk.CTkLabel(self, text="Chime Configuration",
+                    font=("Arial", 20)).pack(pady=10)
 
         # -------------------------
-        # TOP BAR (Scale + Key)
+        # TOP BAR
         # -------------------------
         top_bar = ctk.CTkFrame(self, fg_color="transparent")
         top_bar.pack(fill="x", pady=5, padx=20)
@@ -67,9 +66,11 @@ class ChimeConfigFrame(ctk.CTkFrame):
         )
         self.state_dropdown.pack(side="left", padx=5)
 
-        # KEY
-        ctk.CTkLabel(top_bar, text="Key:", font=("Arial", 14)).pack(side="left", padx=5)
+        # KEY LABEL
+        self.key_label = ctk.CTkLabel(top_bar, text="Key:", font=("Arial", 14))
+        self.key_label.pack(side="left", padx=5)
 
+        # KEY DROPDOWN
         self.key_dropdown = ctk.CTkOptionMenu(
             top_bar,
             values=self.key_names,
@@ -102,14 +103,13 @@ class ChimeConfigFrame(ctk.CTkFrame):
 
             switch = ctk.CTkSwitch(
                 switch_frame,
-                text=f"{note}",
+                text=note,
                 variable=var
             )
             switch.grid(row=i // 4, column=i % 4, padx=10, pady=10, sticky="w")
 
             self.chime_states[note] = var
 
-        # Load initial state
         self.apply_state(self.current_state.get())
 
         # -------------------------
@@ -118,41 +118,48 @@ class ChimeConfigFrame(ctk.CTkFrame):
         button_frame = ctk.CTkFrame(self)
         button_frame.pack(pady=10)
 
-        save_btn = ctk.CTkButton(
+        ctk.CTkButton(
             button_frame,
             text="Save",
             command=self.save_states,
             **button_style
-        )
-        save_btn.grid(row=0, column=0, padx=10)
+        ).grid(row=0, column=0, padx=10)
 
-        back_btn = ctk.CTkButton(
+        ctk.CTkButton(
             button_frame,
             text="Back to Home",
             command=lambda: controller.show_frame("HomeFrame"),
             **button_style
-        )
-        back_btn.grid(row=0, column=1, padx=10)
+        ).grid(row=0, column=1, padx=10)
 
     # -------------------------
     # STATE HANDLING
     # -------------------------
 
     def change_state(self, selected_state):
+        if selected_state == "Custom":
+            self.key_label.pack_forget()
+            self.key_dropdown.pack_forget()
+        else:
+            self.key_label.pack(side="left", padx=5)
+            self.key_dropdown.pack(side="left", padx=5)
+
         self.apply_state(selected_state)
 
     def change_key(self, selected_key):
         self.apply_state(self.current_state.get())
 
     def apply_state(self, state_name):
-        key = self.current_key.get()
-
-        state_data = self.saved_states.get(state_name, {}).get(key, {})
+        if state_name == "Custom":
+            state_data = self.saved_states.get("Custom", {})
+        else:
+            key = self.current_key.get()
+            state_data = self.saved_states.get(state_name, {}).get(key, {})
 
         for note, var in self.chime_states.items():
             var.set(state_data.get(note, False))
 
-        print(f"Loaded {state_name} - Key {key}")
+        print(f"Loaded {state_name}")
 
     # -------------------------
     # JSON FUNCTIONS
@@ -168,25 +175,33 @@ class ChimeConfigFrame(ctk.CTkFrame):
         return {}
 
     def save_states(self):
-        current_scale = self.current_state.get()
-        current_key = self.current_key.get()
+        scale = self.current_state.get()
 
-        # Ensure nested structure exists
-        if current_scale not in self.saved_states:
-            self.saved_states[current_scale] = {}
+        if scale == "Custom":
+            self.saved_states["Custom"] = {
+                k: v.get() for k, v in self.chime_states.items()
+            }
+        else:
+            key = self.current_key.get()
 
-        self.saved_states[current_scale][current_key] = {
-            k: v.get() for k, v in self.chime_states.items()
-        }
+            if scale not in self.saved_states:
+                self.saved_states[scale] = {}
+
+            self.saved_states[scale][key] = {
+                k: v.get() for k, v in self.chime_states.items()
+            }
 
         try:
             with open(self.file_path, "w") as f:
                 json.dump(self.saved_states, f, indent=4)
 
-            print(f"{current_scale} ({current_key}) saved")
+            print(f"{scale} saved")
 
-            # Optional global access
-            self.controller.chime_states = self.saved_states[current_scale][current_key]
+            # optional global
+            if scale == "Custom":
+                self.controller.chime_states = self.saved_states["Custom"]
+            else:
+                self.controller.chime_states = self.saved_states[scale][key]
 
         except Exception as e:
             print("Error saving:", e)
