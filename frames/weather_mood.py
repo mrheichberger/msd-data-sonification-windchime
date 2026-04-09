@@ -73,7 +73,10 @@ class WeatherMoodFrame(ctk.CTkFrame):
         }
 
         # ---------------- JSON FILE ----------------
-        filepath = "weather_mood_config.json"
+        os.makedirs("data", exist_ok=True)
+
+        filename = "weather_mood_config.json"
+        filepath = os.path.join("data", filename)
 
         json_key = f"{weather}_{temp}"
 

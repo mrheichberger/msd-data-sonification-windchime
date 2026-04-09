@@ -8,7 +8,10 @@ class ChimeConfigFrame(ctk.CTkFrame):
         super().__init__(parent)
 
         self.controller = controller
-        self.file_path = "chime_states.json"
+
+        os.makedirs("data", exist_ok=True)
+        self.file_name = "chime_states.json"
+        self.file_path = os.path.join("data", self.file_name)
 
         # -------------------------
         # SCALE + KEY SETUP
