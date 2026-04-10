@@ -1,114 +1,227 @@
 import customtkinter as ctk
+from datetime import datetime
+from tkcalendar import DateEntry
+
 
 class EditTimetableConfigFrame(ctk.CTkFrame):
     def __init__(self, master, controller):
         super().__init__(master)
+
         self.controller = controller
-        self.current_index = None
-        self.is_new = False
-        self.scale_rows = []
+        self.config = None
+        self.index = None
 
+        # ---------------- HEADER ----------------
         ctk.CTkLabel(self, text="Edit Configuration",
-                     font=("Helvetica", 22, "bold")).pack(pady=10)
+                     font=("Helvetica", 20)).pack(pady=10)
 
-        self.name_entry = ctk.CTkEntry(self, width=300)
-        self.name_entry.pack(pady=10)
+        # ---------------- NAME ----------------
+        self.name_entry = ctk.CTkEntry(self, placeholder_text="Name")
+        self.name_entry.pack(pady=5)
 
-        self.scroll = ctk.CTkScrollableFrame(self, height=250)
-        self.scroll.pack(fill="both", expand=True, padx=20, pady=10)
+        # ---------------- DATE ----------------
+        self.date = DateEntry(
+            self,
+            width=12,
+            background='darkblue',
+            foreground='white',
+            borderwidth=2,
+            date_pattern='yyyy-mm-dd'
+        )
+        self.date.pack(pady=5)
 
-        ctk.CTkButton(self, text="+ Add Scale",
-                      command=self.add_scale_row).pack(pady=5)
+        # ---------------- TIME INPUTS ----------------
+        time_frame = ctk.CTkFrame(self)
+        time_frame.pack(pady=10)
 
-        btn_frame = ctk.CTkFrame(self)
-        btn_frame.pack(pady=10)
+        minute_values = [f"{i:02d}" for i in range(0, 60, 5)]
 
-        ctk.CTkButton(btn_frame, text="Cancel",
-                      command=self.cancel).pack(side="left", padx=10)
+        # START
+        ctk.CTkLabel(time_frame, text="Start").grid(row=0, column=0, padx=5)
 
-        ctk.CTkButton(btn_frame, text="Confirm",
-                      command=self.confirm).pack(side="left", padx=10)
+        self.start_hour = ctk.CTkOptionMenu(time_frame,
+                                            values=[str(i) for i in range(1, 13)])
+        self.start_hour.grid(row=0, column=1)
 
-    # ----------------------------
-    # Configuration Setup
-    # ----------------------------
+        self.start_minute = ctk.CTkOptionMenu(time_frame,
+                                              values=minute_values)
+        self.start_minute.grid(row=0, column=2)
 
-    def set_configuration(self, index, config, is_new=False):
-        self.current_index = index
-        self.is_new = is_new
+        self.start_ampm = ctk.CTkOptionMenu(time_frame,
+                                            values=["AM", "PM"])
+        self.start_ampm.grid(row=0, column=3)
+
+        # END
+        ctk.CTkLabel(time_frame, text="End").grid(row=1, column=0, padx=5)
+
+        self.end_hour = ctk.CTkOptionMenu(time_frame,
+                                          values=[str(i) for i in range(1, 13)])
+        self.end_hour.grid(row=1, column=1)
+
+        self.end_minute = ctk.CTkOptionMenu(time_frame,
+                                            values=minute_values)
+        self.end_minute.grid(row=1, column=2)
+
+        self.end_ampm = ctk.CTkOptionMenu(time_frame,
+                                          values=["AM", "PM"])
+        self.end_ampm.grid(row=1, column=3)
+
+        # ---------------- SCALE + KEY ----------------
+        sk_frame = ctk.CTkFrame(self)
+        sk_frame.pack(pady=5)
+
+        self.scale = ctk.CTkOptionMenu(
+            sk_frame, values=["Major", "Minor", "Pentatonic"]
+        )
+        self.scale.pack(side="left", padx=5)
+
+        self.key = ctk.CTkOptionMenu(
+            sk_frame, values=["C", "D", "E", "F", "G", "A", "B"]
+        )
+        self.key.pack(side="left", padx=5)
+
+        # ---------------- ADD BUTTON ----------------
+        ctk.CTkButton(self, text="Add Entry",
+                      command=self.add_entry).pack(pady=10)
+
+        # ---------------- ENTRY LIST ----------------
+        self.entries_frame = ctk.CTkScrollableFrame(self)
+        self.entries_frame.pack(fill="both", expand=True, pady=10)
+
+        # ---------------- BUTTON ROW ----------------
+        button_row = ctk.CTkFrame(self)
+        button_row.pack(pady=10)
+        button_row.background_color="transparent"
+
+        ctk.CTkButton(button_row, text="Save",
+                      command=self.save).pack(side="left", padx=10)
+
+        ctk.CTkButton(button_row, text="Back",
+                      command=lambda: controller.show_frame("TimetableConfigFrame")
+                      ).pack(side="left", padx=10)
+
+        # DEFAULTS
+        self.start_hour.set("12")
+        self.start_minute.set("00")
+        self.start_ampm.set("AM")
+
+        self.end_hour.set("12")
+        self.end_minute.set("00")
+        self.end_ampm.set("AM")
+
+    # =========================
+    # SET CONFIG
+    # =========================
+    def set_configuration(self, index, config, is_new):
+        self.index = index
+        self.config = config
 
         self.name_entry.delete(0, "end")
         self.name_entry.insert(0, config["name"])
 
-        for row in self.scale_rows:
-            row.destroy()
-        self.scale_rows.clear()
+        self.refresh_entries()
 
-        for scale in config["scales"]:
-            self.add_scale_row(scale)
+    # =========================
+    # TIME CONVERSION
+    # =========================
+    def convert_to_24h(self, hour, minute, ampm):
+        hour = int(hour)
+        minute = int(minute)
 
-    # ----------------------------
-    # Scale Rows
-    # ----------------------------
+        if ampm == "PM" and hour != 12:
+            hour += 12
+        if ampm == "AM" and hour == 12:
+            hour = 0
 
-    def add_scale_row(self, scale_data=None):
-        frame = ctk.CTkFrame(self.scroll)
-        frame.pack(fill="x", pady=5)
+        return f"{hour:02d}:{minute:02d}"
 
-        scale_entry = ctk.CTkEntry(frame, width=100)
-        scale_entry.pack(side="left", padx=5)
+    def to_12h(self, time_str):
+        h, m = map(int, time_str.split(":"))
+        ampm = "AM" if h < 12 else "PM"
+        h = h % 12 or 12
+        return f"{h}:{m:02d} {ampm}"
 
-        key_entry = ctk.CTkEntry(frame, width=50)
-        key_entry.pack(side="left", padx=5)
+    # =========================
+    # ADD ENTRY
+    # =========================
+    def add_entry(self):
+        try:
+            date_val = self.date.get()
 
-        duration_entry = ctk.CTkEntry(frame, width=50)
-        duration_entry.pack(side="left", padx=5)
+            start_time = self.convert_to_24h(
+                self.start_hour.get(),
+                self.start_minute.get(),
+                self.start_ampm.get()
+            )
 
-        if scale_data:
-            scale_entry.insert(0, scale_data["scale"])
-            key_entry.insert(0, scale_data["key"])
-            duration_entry.insert(0, scale_data["duration"])
+            end_time = self.convert_to_24h(
+                self.end_hour.get(),
+                self.end_minute.get(),
+                self.end_ampm.get()
+            )
 
-        ctk.CTkButton(frame, text="X",
-                      width=30,
-                      command=lambda: self.delete_row(frame)
-                      ).pack(side="left", padx=5)
+            datetime.strptime(date_val, "%Y-%m-%d")
 
-        self.scale_rows.append(frame)
+        except:
+            print("Invalid input")
+            return
 
-    def delete_row(self, frame):
-        frame.destroy()
-        self.scale_rows.remove(frame)
-
-    # ----------------------------
-    # Save / Cancel
-    # ----------------------------
-
-    def cancel(self):
-        if self.is_new:
-            timetable = self.controller.frames["TimetableConfigFrame"]
-            del timetable.configurations[self.current_index]
-
-        self.controller.show_frame("TimetableConfigFrame")
-
-    def confirm(self):
-        timetable = self.controller.frames["TimetableConfigFrame"]
-
-        scales = []
-        for row in self.scale_rows:
-            entries = row.winfo_children()
-            scales.append({
-                "scale": entries[0].get(),
-                "key": entries[1].get(),
-                "duration": int(entries[2].get() or 1),
-                "timescale": "Hours"
-            })
-
-        timetable.configurations[self.current_index] = {
-            "name": self.name_entry.get(),
-            "scales": scales
+        entry = {
+            "date": date_val,
+            "start_time": start_time,
+            "end_time": end_time,
+            "scale": self.scale.get(),
+            "key": self.key.get()
         }
 
-        timetable.save_configurations()
-        timetable.refresh()
+        self.config["scales"].append(entry)
+        self.refresh_entries()
+
+    # =========================
+    # DELETE ENTRY
+    # =========================
+    def delete_entry(self, index):
+        del self.config["scales"][index]
+        self.refresh_entries()
+
+    # =========================
+    # DISPLAY ENTRIES
+    # =========================
+    def refresh_entries(self):
+        for w in self.entries_frame.winfo_children():
+            w.destroy()
+
+        for i, e in enumerate(self.config["scales"]):
+            frame = ctk.CTkFrame(self.entries_frame)
+            frame.pack(fill="x", pady=2)
+
+            start_12 = self.to_12h(e["start_time"])
+            end_12 = self.to_12h(e["end_time"])
+
+            txt = (
+                f"{e['date']} | {start_12} → {end_12} | "
+                f"{e['scale']} {e['key']}"
+            )
+
+            ctk.CTkLabel(frame, text=txt).pack(side="left", padx=5)
+
+            ctk.CTkButton(
+                frame,
+                text="Delete",
+                width=70,
+                fg_color="#aa3333",
+                hover_color="#882222",
+                command=lambda i=i: self.delete_entry(i)
+            ).pack(side="right", padx=5)
+
+    # =========================
+    # SAVE
+    # =========================
+    def save(self):
+        self.config["name"] = self.name_entry.get()
+
+        parent = self.controller.frames["TimetableConfigFrame"]
+        parent.save()
+        parent.refresh()
+
         self.controller.show_frame("TimetableConfigFrame")

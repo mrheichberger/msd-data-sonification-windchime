@@ -14,11 +14,12 @@ from services.weather_service import WeatherService
 #from services.mood_service import MoodService
 #from services.tts_service import generate_lines
 
+ctk.set_appearance_mode("dark")
 
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
-
+        
         self.geometry("800x600")
         self.title("Windchimes")
         
