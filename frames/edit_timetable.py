@@ -71,12 +71,12 @@ class EditTimetableConfigFrame(ctk.CTkFrame):
         sk_frame.pack(pady=5)
 
         self.scale = ctk.CTkOptionMenu(
-            sk_frame, values=["Major", "Minor", "Pentatonic"]
+            sk_frame, values=["Major", "Minor", "Blues", "Suspended", "Pentatonic", "Custom"]
         )
         self.scale.pack(side="left", padx=5)
 
         self.key = ctk.CTkOptionMenu(
-            sk_frame, values=["C", "D", "E", "F", "G", "A", "B"]
+            sk_frame, values=["C", "D", "E", "F"]
         )
         self.key.pack(side="left", padx=5)
 
