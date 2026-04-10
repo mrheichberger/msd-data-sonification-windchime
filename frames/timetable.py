@@ -10,7 +10,7 @@ class TimetableConfigFrame(ctk.CTkFrame):
         self.controller = controller
         self.configurations = []
 
-        # 🔥 Better layout balance
+        # layout balance
         self.grid_columnconfigure(0, weight=2)
         self.grid_columnconfigure(1, weight=3)
         self.grid_rowconfigure(2, weight=1)
@@ -70,7 +70,7 @@ class TimetableConfigFrame(ctk.CTkFrame):
             frame = ctk.CTkFrame(self.scroll)
             frame.pack(fill="x", pady=5)
 
-            # 🔥 GRID LAYOUT FOR CLEAN ROW
+            # GRID LAYOUT 
             frame.grid_columnconfigure(0, weight=1)
             frame.grid_columnconfigure(1, weight=0)
             frame.grid_columnconfigure(2, weight=0)
