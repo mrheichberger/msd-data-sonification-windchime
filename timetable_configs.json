@@ -1,1 +1,25 @@
-[]
+[
+    {
+        "name": "Config 1",
+        "scales": [
+            {
+                "date": "2026-04-16",
+                "start_time": "17:30",
+                "end_time": "00:00",
+                "scale": "Custom",
+                "key": "E"
+            },
+            {
+                "date": "2026-04-10",
+                "start_time": "17:30",
+                "end_time": "00:00",
+                "scale": "Custom",
+                "key": "E"
+            }
+        ]
+    },
+    {
+        "name": "time 2",
+        "scales": []
+    }
+]

@@ -75,7 +75,8 @@ def get_encoder_positions():
     mapper = ChimeMapper(FINAL_PATH)
     return mapper.map_final_notes_to_positions()
 
-
+#debug 
+'''
 if __name__ == "__main__":
     # Example 1: weather mode
     fake_weather_data = {
@@ -97,3 +98,4 @@ if __name__ == "__main__":
     # Example 3: user mode with Custom
     update_final_json(control_mode="user", selected_scale="Custom")
     print("Positions after user Custom:", get_encoder_positions())
+    '''
