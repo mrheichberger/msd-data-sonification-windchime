@@ -1,25 +1,48 @@
-'''
-This file decides if the chime is
-in user mode or weather mode.
-
-If in weather mode:
-- use weather data to choose scale + key
-- then update final_notes.json from chime_states.json
-
-If in user mode:
-- use the GUI-selected scale choice
-- if it is a normal scale, use scale + key
-- if it is Custom, copy the Custom note set
-'''
-
 from scale_manager import ScaleManager
 from chime_mapper import ChimeMapper
 from weather_mode_mapper import WeatherModeMapper
+from datetime import datetime
+import json
 
 
 # File paths
-SCALES_PATH = "chime_states.json"
-FINAL_PATH = "final_notes.json"
+SCALES_PATH = "data/chime_states.json"
+FINAL_PATH = "data/final_notes.json"
+TIMETABLE_PATH = "timetable_configs.json"
+
+
+def get_active_scheduled_scale(timetable_path):
+    """
+    Return the currently active scheduled scale entry if one exists.
+    Otherwise return None.
+    """
+    now = datetime.now()
+    current_date = now.date()
+    current_time = now.time()
+
+    with open(timetable_path, "r") as f:
+        configs = json.load(f)
+
+    for config in configs:
+        for entry in config.get("scales", []):
+            entry_date = datetime.strptime(entry["date"], "%Y-%m-%d").date()
+            start_time = datetime.strptime(entry["start_time"], "%H:%M").time()
+            end_time = datetime.strptime(entry["end_time"], "%H:%M").time()
+
+            if entry_date != current_date:
+                continue
+
+            # Normal same-day range
+            if start_time <= end_time:
+                if start_time <= current_time <= end_time:
+                    return entry
+
+            # Crosses midnight
+            else:
+                if current_time >= start_time or current_time <= end_time:
+                    return entry
+
+    return None
 
 
 def update_final_json(control_mode, weather_data=None, selected_scale=None, selected_key=None):
@@ -50,19 +73,36 @@ def update_final_json(control_mode, weather_data=None, selected_scale=None, sele
         scale_manager.update_from_selection(scale_name, key_name)
 
     elif control_mode == "user":
-        if selected_scale is None:
-            raise ValueError("selected_scale is required for user mode.")
+        scheduled_entry = get_active_scheduled_scale(TIMETABLE_PATH)
 
-        print(f"User selected scale: {selected_scale}")
+        if scheduled_entry is not None:
+            scale_name = scheduled_entry["scale"]
+            key_name = scheduled_entry.get("key")
 
-        if selected_scale == "Custom":
-            scale_manager.update_from_selection("Custom")
+            print(f"Scheduled user scale active: {scale_name}")
+            print(f"Scheduled user key active: {key_name}")
+
+            if scale_name == "Custom":
+                scale_manager.update_from_selection("Custom")
+            else:
+                if key_name is None:
+                    raise ValueError("Scheduled keyed scale is missing a key.")
+                scale_manager.update_from_selection(scale_name, key_name)
+
         else:
-            if selected_key is None:
-                raise ValueError("selected_key is required for non-Custom user scales.")
+            if selected_scale is None:
+                raise ValueError("selected_scale is required for user mode.")
 
-            print(f"User selected key: {selected_key}")
-            scale_manager.update_from_selection(selected_scale, selected_key)
+            print(f"User selected scale: {selected_scale}")
+
+            if selected_scale == "Custom":
+                scale_manager.update_from_selection("Custom")
+            else:
+                if selected_key is None:
+                    raise ValueError("selected_key is required for non-Custom user scales.")
+
+                print(f"User selected key: {selected_key}")
+                scale_manager.update_from_selection(selected_scale, selected_key)
 
     else:
         raise ValueError("control_mode must be 'weather' or 'user'")
@@ -74,28 +114,3 @@ def get_encoder_positions():
     """
     mapper = ChimeMapper(FINAL_PATH)
     return mapper.map_final_notes_to_positions()
-
-#debug 
-'''
-if __name__ == "__main__":
-    # Example 1: weather mode
-    fake_weather_data = {
-        "current": {
-            "temp": 40,
-            "weather": [
-                {"main": "Rain"}
-            ]
-        }
-    }
-
-    update_final_json(control_mode="weather", weather_data=fake_weather_data)
-    print("Positions after weather update:", get_encoder_positions())
-
-    # Example 2: user mode with keyed scale
-    update_final_json(control_mode="user", selected_scale="Major", selected_key="D")
-    print("Positions after user Major D:", get_encoder_positions())
-
-    # Example 3: user mode with Custom
-    update_final_json(control_mode="user", selected_scale="Custom")
-    print("Positions after user Custom:", get_encoder_positions())
-    '''
