@@ -1,9 +1,10 @@
+from main_backend import update_final_json
 import json
 from chime_mapper import ChimeMapper
 from uart_service import UARTComm
 
 CURRENT_POSITIONS_PATH = "current_chime_position.json"
-FINAL_PATH = "final_truth.json"
+FINAL_PATH = "data/final_notes.json"
 
 
 def load_current_positions():
@@ -20,7 +21,6 @@ def get_target_positions():
     mapper = ChimeMapper(FINAL_PATH)
     target_list = mapper.map_final_notes_to_positions()
 
-    # convert list to dict like set_1, set_2, ...
     target_dict = {}
     for i, pos in enumerate(target_list, start=1):
         target_dict[f"set_{i}"] = pos
@@ -34,7 +34,6 @@ def compute_uart_commands(current_positions, target_positions):
     for key in current_positions:
         current = current_positions[key]
         target = target_positions[key]
-
         slots_to_move = (target - current) % 6
         commands[key] = slots_to_move
 
@@ -67,7 +66,13 @@ def apply_uart_moves():
         uart.close()
 
 
-if __name__ == "__main__":
+def run_full_backend_update(control_mode, weather_data=None, selected_scale=None, selected_key=None):
+    update_final_json(
+        control_mode=control_mode,
+        weather_data=weather_data,
+        selected_scale=selected_scale,
+        selected_key=selected_key
+    )
     apply_uart_moves()
 
 
