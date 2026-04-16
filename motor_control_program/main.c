@@ -1,98 +1,196 @@
-//Motor Control Prototype Program
-//Intended for testing basic GPIO functionality on the Raspberry Pi Pico.
-
-
 #include "motor_driver.h"
 #include "encoder.h"
 #include <pico/stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include "uart_comm.h"
+
 #define COUNTS_PER_DETENT 4
+#define DETENTS_PER_SLOT 1
 #define UART_TX_PIN 16
 #define UART_RX_PIN 17
-//------------------------------------------------------------------------
-//class values for motor #1 mapped to pin 0 and 1
+
+int32_t move_geneva_slots(motor_driver_t *m, encoder_t *enc, int32_t requested_slots)
+{
+    int32_t start_pos = encoder_get_position(enc);
+    int32_t start_det = start_pos / COUNTS_PER_DETENT;
+    int32_t start_slot = start_det / DETENTS_PER_SLOT;
+
+    int32_t target_slot = start_slot + requested_slots;
+
+    motor_forward_full(m);
+
+    while (1) {
+        int32_t pos = encoder_get_position(enc);
+        int32_t det = pos / COUNTS_PER_DETENT;
+        int32_t current_slot = det / DETENTS_PER_SLOT;
+
+        if (current_slot >= target_slot) {
+            break;
+        }
+
+        sleep_ms(1);
+    }
+
+    motor_stop(m);
+    sleep_ms(10);
+
+    int32_t end_pos = encoder_get_position(enc);
+    int32_t end_det = end_pos / COUNTS_PER_DETENT;
+    int32_t end_slot = end_det / DETENTS_PER_SLOT;
+
+    return end_slot - start_slot;
+}
+
+// ---------------- motors ----------------
 motor_driver_t m1 = {
-    .in1_pin = 0,
-    .in2_pin = 1,
+    .pwm_pin = 0,
     .wrap = 10000,
     .clkdiv = 4.0f
 };
 
-//class values for motor # 2 mapped to pin 2 and 3
 motor_driver_t m2 = {
-    .in1_pin = 2,
-    .in2_pin = 3,
+    .pwm_pin = 1,
     .wrap = 10000,
     .clkdiv = 4.0f
 };
 
-//class values for encoder mapped to pins 6 and 7
-    encoder_t enc = {
-        .pin_a = 6,
-        .pin_b = 7,
-        .use_pullups = true
-    };
- 
-//--------------------------------------------------------------
+motor_driver_t m3 = {
+    .pwm_pin = 2,
+    .wrap = 10000,
+    .clkdiv = 4.0f
+};
+
+motor_driver_t m4 = {
+    .pwm_pin = 3,
+    .wrap = 10000,
+    .clkdiv = 4.0f
+};
+
+motor_driver_t m5 = {
+    .pwm_pin = 4,
+    .wrap = 10000,
+    .clkdiv = 4.0f
+};
+
+motor_driver_t m6 = {
+    .pwm_pin = 5,
+    .wrap = 10000,
+    .clkdiv = 4.0f
+};
+
+motor_driver_t m7 = {
+    .pwm_pin = 6,
+    .wrap = 10000,
+    .clkdiv = 4.0f
+};
+
+motor_driver_t m8 = {
+    .pwm_pin = 7,
+    .wrap = 10000,
+    .clkdiv = 4.0f
+};
+
+// ---------------- encoders ----------------
+encoder_t enc1 = {
+    .pin_a = 8,
+    .pin_b = 9,
+    .use_pullups = true
+};
+
+encoder_t enc2 = {
+    .pin_a = 10,
+    .pin_b = 11,
+    .use_pullups = true
+};
+
+encoder_t enc3 = {
+    .pin_a = 12,
+    .pin_b = 13,
+    .use_pullups = true
+};
+
+encoder_t enc4 = {
+    .pin_a = 14,
+    .pin_b = 15,
+    .use_pullups = true
+};
+
+encoder_t enc5 = {
+    .pin_a = 18,
+    .pin_b = 19,
+    .use_pullups = true
+};
+
+encoder_t enc6 = {
+    .pin_a = 20,
+    .pin_b = 21,
+    .use_pullups = true
+};
+
+encoder_t enc7 = {
+    .pin_a = 22,
+    .pin_b = 26,
+    .use_pullups = true
+};
+
+encoder_t enc8 = {
+    .pin_a = 27,
+    .pin_b = 28,
+    .use_pullups = true
+};
+
+// ---------------- arrays ----------------
+motor_driver_t* motors[8] = { &m1, &m2, &m3, &m4, &m5, &m6, &m7, &m8 };
+encoder_t* encoders[8] = { &enc1, &enc2, &enc3, &enc4, &enc5, &enc6, &enc7, &enc8 };
 
 int main() {
-//----------one time initalizations ----------------------------
     stdio_init_all();
-    motor_init(&m1); //initalize motor 1
-    motor_init(&m2); //initalize motor 2
-    encoder_init(&enc); //initalize the encoder
+
+    motor_init(&m1);
+    motor_init(&m2);
+    motor_init(&m3);
+    motor_init(&m4);
+    motor_init(&m5);
+    motor_init(&m6);
+    motor_init(&m7);
+    motor_init(&m8);
+
+    encoder_init(&enc1);
+    encoder_init(&enc2);
+    encoder_init(&enc3);
+    encoder_init(&enc4);
+    encoder_init(&enc5);
+    encoder_init(&enc6);
+    encoder_init(&enc7);
+    encoder_init(&enc8);
+
     uart_comm_init();
 
-    //reading this number in 
-    int32_t requested_slots = 0;
-    //writing back to this variable 
-    int32_t actual_slots_moved = 0;
+    while (1) {
+        int32_t requested_motor = 0;
+        int32_t requested_slots = 0;
+        int32_t actual_slots_moved = 0;
 
+        if (uart_comm_read_int(&requested_motor)) {
+            if (uart_comm_read_int(&requested_slots)) {
 
-while(1) {  //keep this loop going forever 
-  
-    //----------------encoder protocal ------------------------------------
-    //get the encoder position and send to putty 
-    int32_t pos = encoder_get_position();
-    int32_t det = pos / 4;
-    int32_t rot = encoder_get_slot(16, 2);
-    printf("pos=%ld det=%ld rot60=%ld\n", pos, det, rot);
+                if (requested_motor >= 1 && requested_motor <= 8) {
+                    int index = requested_motor - 1;
 
-    //------------------motor protocal ------------------------------------    
-    //turn the motors on with pmw=1
-    motor_forward_full(&m2); //make output A of motor logic high
-    motor_forward_full(&m1); //make output B of motor logic low
-    sleep_ms(100);
+                    actual_slots_moved = move_geneva_slots(
+                        motors[index],
+                        encoders[index],
+                        requested_slots
+                    );
 
-    //------------uart protocal -------------------------------------------
-     if (uart_comm_read_int(&requested_slots)) {
-            // Replace this with your real motion logic
-            //actual_slots_moved = move_geneva_slots(requested_slots);
-
-            actual_slots_moved = rot;  // temporary test infinite count up just to see how it writes back
-            uart_comm_send_int(actual_slots_moved);
-             // Send encoder position back over UART pins
+                    uart_comm_send_int(actual_slots_moved);
+                } else {
+                    uart_comm_send_int(-1);
+                }
+            }
         }
 
         sleep_ms(5);
-    //-----------------------------------------------------------------------
-
+    }
 }
-}
-
-
-/* create the move_geneva_slots function that: 
-reads current encoder position
-computes target
-drives motor
-stops when target reached
-returns actual number of slots moved*/
-
-
-
-
-
-
-
