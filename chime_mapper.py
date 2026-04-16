@@ -52,13 +52,13 @@ class ChimeMapper:
             D (second only) -> 4
         """
         if note_1 and note_2:
-            return 3
-        elif note_1:
-            return 2
-        elif note_2:
             return 4
+        elif note_1:
+            return 3
+        elif note_2:
+            return 5
         else:
-            return 0
+            return 1
 
     def map_final_notes_to_positions(self, debug=False):
         """
