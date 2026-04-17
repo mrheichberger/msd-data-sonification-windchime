@@ -41,6 +41,8 @@ class WeatherService:
         ).json()['list'][-1]['main']['aqi']
 
         weather_data = {
+            "condition": weather['weather'][0]['main'], # Possible values: Clear, Clouds, Rain, Drizzle, 
+                                                        # Thunderstorm, Snow, Mist, Smoke, Haze, Dust, Fog, Sand, Ash, Squall, Tornado
             "wind_speed": weather['wind']['speed'],
             "wind_dir": weather['wind']['deg'],
             "temp": weather['main']['temp'],
