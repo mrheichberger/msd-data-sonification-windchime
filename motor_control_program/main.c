@@ -10,6 +10,7 @@
 #define UART_TX_PIN 16
 #define UART_RX_PIN 17
 
+
 int32_t move_geneva_slots(motor_driver_t *m, encoder_t *enc, int32_t requested_slots)
 {
     int32_t start_pos = encoder_get_position(enc);
@@ -143,7 +144,7 @@ encoder_t enc8 = {
 // ---------------- arrays ----------------
 motor_driver_t* motors[8] = { &m1, &m2, &m3, &m4, &m5, &m6, &m7, &m8 };
 encoder_t* encoders[8] = { &enc1, &enc2, &enc3, &enc4, &enc5, &enc6, &enc7, &enc8 };
-
+/*
 int main() {
     stdio_init_all();
 
@@ -167,27 +168,80 @@ int main() {
 
     uart_comm_init();
 
-    while (1) {
-        int32_t requested_motor = 0;
-        int32_t requested_slots = 0;
-        int32_t actual_slots_moved = 0;
+    int32_t requested_motor = 0;
+int32_t requested_slots = 0;
+bool motor_received = false;
 
+while (1) {
+    if (!motor_received) {
         if (uart_comm_read_int(&requested_motor)) {
+            motor_received = true;
+        }
+    } else {
+        if (uart_comm_read_int(&requested_slots)) {
+            if (requested_motor >= 1 && requested_motor <= 8) {
+                int index = requested_motor - 1;
+
+                int32_t actual_slots_moved = move_geneva_slots(
+                    motors[index],
+                    encoders[index],
+                    requested_slots
+                );
+
+                uart_comm_send_int(actual_slots_moved);
+            } else {
+                uart_comm_send_int(-1);
+            }
+
+            motor_received = false; // ready for next motor command
+        }
+    }
+
+    sleep_ms(5);
+}
+}
+*/
+int main() {
+    stdio_init_all();
+
+    motor_init(&m1);
+    motor_init(&m2);
+    motor_init(&m3);
+    motor_init(&m4);
+    motor_init(&m5);
+    motor_init(&m6);
+    motor_init(&m7);
+    motor_init(&m8);
+
+    encoder_init(&enc1);
+    encoder_init(&enc2);
+    encoder_init(&enc3);
+    encoder_init(&enc4);
+    encoder_init(&enc5);
+    encoder_init(&enc6);
+    encoder_init(&enc7);
+    encoder_init(&enc8);
+
+    uart_comm_init();
+
+    int32_t requested_motor = 0;
+    int32_t requested_slots = 0;
+    bool motor_received = false;
+
+    while (1) {
+        if (!motor_received) {
+            if (uart_comm_read_int(&requested_motor)) {
+                printf("Got motor: %ld\n", (long)requested_motor);
+                motor_received = true;
+            }
+        } else {
             if (uart_comm_read_int(&requested_slots)) {
+                printf("Got slots: %ld\n", (long)requested_slots);
 
-                if (requested_motor >= 1 && requested_motor <= 8) {
-                    int index = requested_motor - 1;
+                uart_comm_send_int(99);
+                printf("Sent reply: 99\n");
 
-                    actual_slots_moved = move_geneva_slots(
-                        motors[index],
-                        encoders[index],
-                        requested_slots
-                    );
-
-                    uart_comm_send_int(actual_slots_moved);
-                } else {
-                    uart_comm_send_int(-1);
-                }
+                motor_received = false;
             }
         }
 

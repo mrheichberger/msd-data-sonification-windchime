@@ -38,6 +38,10 @@ bool uart_comm_read_int(int32_t *value) {
     while (uart_is_readable(UART_ID)) {
         char c = uart_getc(UART_ID);
 
+        if (c == '\r') {
+            continue;
+        }
+
         if (c == '\n') {
             buffer[index] = '\0';
             *value = atoi(buffer);
@@ -48,7 +52,7 @@ bool uart_comm_read_int(int32_t *value) {
         if (index < BUF_SIZE - 1) {
             buffer[index++] = c;
         } else {
-            index = 0; // reset if overflow
+            index = 0;
         }
     }
     return false;
