@@ -115,13 +115,25 @@ class TimetableConfigFrame(ctk.CTkFrame):
     # =========================
     # LABEL
     # =========================
+    '''
     def update_label(self):
         if self.controller.selected_configuration is not None:
             name = self.configurations[self.controller.selected_configuration]["name"]
             self.current_label.configure(text=f"Current: {name}")
         else:
             self.current_label.configure(text="None selected")
+    '''
+    #^old code below is for debug 
+    def update_label(self):
+        if self.controller.selected_configuration is not None:
+            print("selected_configuration:", self.controller.selected_configuration)
+            print("type:", type(self.controller.selected_configuration))
+            print("configurations type:", type(self.configurations))
 
+            name = self.configurations[self.controller.selected_configuration]["name"]
+            self.current_label.configure(text=f"Current: {name}")
+        else:
+            self.current_label.configure(text="None selected")
     # =========================
     # TIMELINE
     # =========================
