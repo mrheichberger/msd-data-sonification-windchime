@@ -5,7 +5,7 @@ and to map them to the scales that they will play.
 Later the scales still need to be converted to what
 notes are true and what notes are false '''
 
-# weather_mode_mapper.py
+# weather_mood_mapper.py
 
 """
 weather_mode_mapper.py
