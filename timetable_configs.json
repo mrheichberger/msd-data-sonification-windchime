@@ -3,23 +3,24 @@
         "name": "Config 1",
         "scales": [
             {
-                "date": "2026-04-16",
-                "start_time": "17:30",
-                "end_time": "00:00",
-                "scale": "Custom",
-                "key": "E"
-            },
-            {
-                "date": "2026-04-10",
-                "start_time": "17:30",
-                "end_time": "00:00",
-                "scale": "Custom",
-                "key": "E"
+                "date": "2026-04-17",
+                "start_time": "05:00",
+                "end_time": "12:00",
+                "scale": "Major",
+                "key": "C"
             }
         ]
     },
     {
-        "name": "time 2",
-        "scales": []
+        "name": "Config 2",
+        "scales": [
+            {
+                "date": "2026-04-17",
+                "start_time": "17:00",
+                "end_time": "18:30",
+                "scale": "Major",
+                "key": "C"
+            }
+        ]
     }
 ]
