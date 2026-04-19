@@ -79,6 +79,11 @@ class App(ctk.CTk):
                 )
 
             print("Backend update complete.")
+            import json
+
+            with open("data/final_notes.json", "r") as f:
+                notes = json.load(f)
+                print("FINAL NOTES:", notes)
 
         except Exception as e:
             print("Backend update error:", e)
