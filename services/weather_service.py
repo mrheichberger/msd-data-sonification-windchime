@@ -1,7 +1,7 @@
 import os
 import requests
-from datetime import datetime
 from dotenv import load_dotenv
+
 
 class WeatherService:
     def __init__(self):
@@ -12,9 +12,9 @@ class WeatherService:
             print("API_KEYS.env file not found. Weather service will be disabled.")
             self.enabled = False
             return
-        
+
         load_dotenv("API_KEYS.env")
-        
+
         self.api_keys["openweathermap"] = os.getenv("OPENWEATHERMAP")
         if not self.api_keys["openweathermap"]:
             print("OPENWEATHERMAP key not found in API_KEYS.env. Weather service will be disabled.")
@@ -41,18 +41,25 @@ class WeatherService:
         ).json()['list'][-1]['main']['aqi']
 
         weather_data = {
-            "condition": weather['weather'][0]['main'], # Possible values: Clear, Clouds, Rain, Drizzle, 
-                                                        # Thunderstorm, Snow, Mist, Smoke, Haze, Dust, Fog, Sand, Ash, Squall, Tornado
-            "wind_speed": weather['wind']['speed'],
-            "wind_dir": weather['wind']['deg'],
-            "temp": weather['main']['temp'],
-            "humidity": weather['main']['humidity'],
-            "pressure": weather['main']['pressure'],
-            "clouds": weather['clouds']['all'],
-            "visibility": weather['visibility'],
-            "pop": forecast['list'][-1]['pop'] * 100,
-            "aqi": aqi
+            "current": {
+                "temp": weather["main"]["temp"],
+                "weather": [
+                    {
+                        "main": weather["weather"][0]["main"]
+                    }
+                ]
+            },
+            "extra": {
+                "wind_speed": weather["wind"]["speed"],
+                "wind_dir": weather["wind"]["deg"],
+                "humidity": weather["main"]["humidity"],
+                "pressure": weather["main"]["pressure"],
+                "clouds": weather["clouds"]["all"],
+                "visibility": weather["visibility"],
+                "pop": forecast["list"][-1]["pop"] * 100,
+                "aqi": aqi
+            }
         }
-        
+
         uv = None
         return weather_data, uv

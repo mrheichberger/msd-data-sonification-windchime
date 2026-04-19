@@ -10,29 +10,30 @@ from frames.monitor import MonitorFrame
 from frames.chime_config import ChimeConfigFrame
 from frames.weather_mood import WeatherMoodFrame
 
+from current_chime_position import run_full_backend_update
 from services.weather_service import WeatherService
-#from services.mood_service import MoodService
-#from services.tts_service import generate_lines
 
 ctk.set_appearance_mode("dark")
+
 
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
-        
+
         self.geometry("800x600")
         self.title("Windchimes")
-        
+
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
         self.current_mode = "Weather Mode"
         self.selected_configuration = None
+        self.selected_scale = None
+        self.selected_key = None
         self.weather = {}
         self.uv = None
 
         self.weather_service = WeatherService()
-        #self.mood_service = MoodService()
 
         if self.weather_service.enabled:
             self.after(100, self.update_weather)
@@ -46,7 +47,7 @@ class App(ctk.CTk):
             EditTimetableConfigFrame,
             ModeSelectionFrame,
             MonitorFrame,
-            ChimeConfigFrame, 
+            ChimeConfigFrame,
             WeatherMoodFrame
         ):
             frame = Frame(self, controller=self)
@@ -54,7 +55,6 @@ class App(ctk.CTk):
             frame.grid(row=0, column=0, sticky="nsew")
 
         self.show_frame("HomeFrame")
-
         self.bind("<Escape>", lambda e: self.destroy())
 
     def show_frame(self, frame_name: str):
@@ -64,13 +64,46 @@ class App(ctk.CTk):
         if hasattr(frame, "on_show"):
             frame.on_show()
 
+    def run_backend_update(self):
+        try:
+            if self.current_mode == "Weather Mode":
+                run_full_backend_update(
+                    control_mode="weather",
+                    weather_data=self.weather
+                )
+            else:
+                run_full_backend_update(
+                    control_mode="user",
+                    selected_scale=self.selected_scale,
+                    selected_key=self.selected_key
+                )
+
+            print("Backend update complete.")
+
+        except Exception as e:
+            print("Backend update error:", e)
+
+    def set_mode(self, mode):
+        self.current_mode = mode
+        self.run_backend_update()
+
+    def set_user_selection(self, scale, key=None):
+        self.selected_scale = scale
+        self.selected_key = key
+        self.run_backend_update()
 
     def update_weather(self):
         self.weather, self.uv = self.weather_service.fetch_weather()
-        #elf.mood = self.mood_service.calculate_mood(self.weather)
+
+        print("Weather from API:", self.weather)
+        print("UV:", self.uv)
+
+        if self.current_mode == "Weather Mode":
+            self.run_backend_update()
+
         self.after(1000 * 60 * 20, self.update_weather)
 
+
 if __name__ == "__main__":
-    #generate_lines()
     app = App()
     app.mainloop()

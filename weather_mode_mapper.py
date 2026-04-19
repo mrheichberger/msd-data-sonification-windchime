@@ -24,7 +24,7 @@ import os
 
 
 class WeatherModeMapper:
-    def __init__(self, config_path="weather_mode_config.json"):
+    def __init__(self, config_path="data/weather_mode_config.json"):
         """
         Args:
             config_path (str): path to GUI-written JSON config file
