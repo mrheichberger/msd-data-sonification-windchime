@@ -41,24 +41,17 @@ class WeatherService:
         ).json()['list'][-1]['main']['aqi']
 
         weather_data = {
-            "current": {
-                "temp": weather["main"]["temp"],
-                "weather": [
-                    {
-                        "main": weather["weather"][0]["main"]
-                    }
-                ]
-            },
-            "extra": {
-                "wind_speed": weather["wind"]["speed"],
-                "wind_dir": weather["wind"]["deg"],
-                "humidity": weather["main"]["humidity"],
-                "pressure": weather["main"]["pressure"],
-                "clouds": weather["clouds"]["all"],
-                "visibility": weather["visibility"],
-                "pop": forecast["list"][-1]["pop"] * 100,
-                "aqi": aqi
-            }
+            "condition": weather['weather'][0]['main'], # Possible values: Clear, Clouds, Rain, Drizzle, 
+                                                        # Thunderstorm, Snow, Mist, Smoke, Haze, Dust, Fog, Sand, Ash, Squall, Tornado
+            "wind_speed": weather['wind']['speed'],
+            "wind_dir": weather['wind']['deg'],
+            "temp": weather['main']['temp'],
+            "humidity": weather['main']['humidity'],
+            "pressure": weather['main']['pressure'],
+            "clouds": weather['clouds']['all'],
+            "visibility": weather['visibility'],
+            "pop": forecast['list'][-1]['pop'] * 100,
+            "aqi": aqi
         }
 
         uv = None

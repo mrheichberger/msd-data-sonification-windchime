@@ -57,7 +57,7 @@ def update_final_json(control_mode, weather_data=None, selected_scale=None, sele
     """
     scale_manager = ScaleManager(SCALES_PATH, FINAL_PATH)
 
-    if control_mode == "weather":
+    if control_mode == "Weather Mode":
         if weather_data is None:
             raise ValueError("weather_data is required for weather mode.")
 
@@ -72,7 +72,7 @@ def update_final_json(control_mode, weather_data=None, selected_scale=None, sele
 
         scale_manager.update_from_selection(scale_name, key_name)
 
-    elif control_mode == "user":
+    elif control_mode == "User Mode":
         scheduled_entry = get_active_scheduled_scale(TIMETABLE_PATH)
 
         if scheduled_entry is not None:

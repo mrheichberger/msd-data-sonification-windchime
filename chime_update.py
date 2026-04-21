@@ -32,6 +32,9 @@ def get_weather_mood_config(weather_data):
     return scale, key
 
 def check_timetable(timetable_data, current_config):
+    if current_config is None:
+        return None
+    
     now = datetime.datetime.now()
     current_time = now.strftime("%H:%M")
     
@@ -45,27 +48,26 @@ def check_timetable(timetable_data, current_config):
     
     return None
 
-def update(control_mode, current_config):
+def chime_update(control_mode, current_config):
 
     with open(timetable_config, "r") as f:
         timetable_data = json.load(f)
     
     weather_service = WeatherService()
     weather_data = weather_service.fetch_weather()    
-
-    scale, key = None, None
     
-    check_timetable = check_timetable(timetable_data, current_config)
-    if check_timetable is not None:
+    scale, key = None, None
+    timetable = check_timetable(timetable_data, current_config)
+    if timetable is not None:
         print("Active timetable config found, using that...")
-        scale = check_timetable["scale"]
-        key = check_timetable["key"]
+        scale = timetable["scale"]
+        key = timetable["key"]
     else:
         print("No active timetable config found, checking weather...")
         scale, key = get_weather_mood_config(weather_data)
     
-    print(f"Updating with scale: {scale}, key: {key}")
-    #run_full_backend_update(control_mode, weather_data, scale, key)
+    #print(f"Updating with scale: {scale}, key: {key}")
+    run_full_backend_update(control_mode, weather_data, scale, key)
     
     
 
@@ -97,4 +99,3 @@ def getCondition(condition):
     else: 
         # Default case for unrecognized conditions
         return "Cloudy"
-    

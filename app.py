@@ -15,7 +15,6 @@ from services.weather_service import WeatherService
 
 ctk.set_appearance_mode("dark")
 
-
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -23,6 +22,8 @@ class App(ctk.CTk):
         self.geometry("800x600")
         self.title("Windchimes")
 
+        self.attributes("-fullscreen", True)
+    
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
@@ -98,15 +99,22 @@ class App(ctk.CTk):
         self.run_backend_update()
 
     def update_weather(self):
-        self.weather, self.uv = self.weather_service.fetch_weather()
+        try:
+            from chime_update import chime_update  # adjust import
 
-        print("Weather from API:", self.weather)
-        print("UV:", self.uv)
+            chime_update(
+                control_mode=self.current_mode,
+                current_config=None
+            )
 
-        if self.current_mode == "Weather Mode":
-            self.run_backend_update()
+            print("Weather + backend updated")
 
-        self.after(1000 * 60 * 20, self.update_weather)
+        except Exception as e:
+            print("Update error:", e)
+
+        finally:
+            # 🔁 run again in 10 minutes
+            self.after(1000 * 60 * 10, self.update_weather)
 
 
 if __name__ == "__main__":
