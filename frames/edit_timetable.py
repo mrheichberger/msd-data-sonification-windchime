@@ -2,6 +2,8 @@ import customtkinter as ctk
 from datetime import datetime
 from tkcalendar import DateEntry
 
+import chime_update
+
 
 class EditTimetableConfigFrame(ctk.CTkFrame):
     def __init__(self, master, controller):
@@ -226,5 +228,6 @@ class EditTimetableConfigFrame(ctk.CTkFrame):
         parent = self.controller.frames["TimetableConfigFrame"]
         parent.save()
         parent.refresh()
+        chime_update(self)
 
         self.controller.show_frame("TimetableConfigFrame")

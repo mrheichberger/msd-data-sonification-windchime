@@ -2,6 +2,8 @@ import customtkinter as ctk
 import json
 from datetime import datetime
 
+import chime_update
+
 
 class TimetableConfigFrame(ctk.CTkFrame):
     def __init__(self, master, controller):
@@ -208,6 +210,7 @@ class TimetableConfigFrame(ctk.CTkFrame):
     def select(self, i):
         self.controller.selected_configuration = i
         self.refresh()
+        chime_update(self)
 
     def edit(self, i):
         self.controller.frames["EditTimetableConfigFrame"].set_configuration(
