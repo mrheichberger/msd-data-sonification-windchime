@@ -130,7 +130,7 @@ class TimetableConfigFrame(ctk.CTkFrame):
             print("type:", type(self.controller.selected_configuration))
             print("configurations type:", type(self.configurations))
 
-            name = self.configurations[self.controller.selected_configuration]["name"]
+            name = self.configurations[self.controller.selected_configuration]
             self.current_label.configure(text=f"Current: {name}")
         else:
             self.current_label.configure(text="None selected")

@@ -16,8 +16,8 @@ def get_weather_mood_config(weather_data):
     # Process the weather data and update the application state
     scale, key = None, None
     
-    condition = weather_data[0]["current"]["weather"][0]["main"]
-    temp = weather_data[0]["current"]["temp"]
+    condition = weather_data["current"]["weather"][0]["main"]
+    temp = weather_data["current"]["temp"]
     
     condition_str = getCondition(condition)
     temp_range = get_temp_range(temp)
@@ -57,8 +57,8 @@ def chime_update(self):
     current_config = self.selected_configuration
     
     weather_service = WeatherService()
-    self.weather = weather_service.fetch_weather()    
-    weather_data = self.weather
+    weather_data, _ = weather_service.fetch_weather()
+    self.weather = weather_data
     
     scale = None
     key = None
