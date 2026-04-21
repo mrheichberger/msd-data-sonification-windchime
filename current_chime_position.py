@@ -27,6 +27,16 @@ def get_target_positions():
 
     return target_dict
 
+def compute_uart_commands(current_positions, target_positions):
+    commands = {}
+
+    for key in current_positions:
+        current = current_positions[key]
+        target = target_positions[key]
+        slots_to_move = (target - current) % 6
+        commands[key] = slots_to_move
+
+    return commands
 
 def apply_uart_moves():
     current_positions = load_current_positions()
