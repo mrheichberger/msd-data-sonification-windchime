@@ -72,7 +72,7 @@ def chime_update(self):
         scale, key = get_weather_mood_config(weather_data)
     
     #print(f"Updating with scale: {scale}, key: {key}")
-    #run_full_backend_update(control_mode, weather_data, scale, key)
+    run_full_backend_update(control_mode, weather_data, scale, key)
     
     
 
