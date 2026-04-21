@@ -2,7 +2,7 @@ import customtkinter as ctk
 from datetime import datetime
 from tkcalendar import DateEntry
 
-import chime_update
+from chime_update import chime_update
 
 
 class EditTimetableConfigFrame(ctk.CTkFrame):

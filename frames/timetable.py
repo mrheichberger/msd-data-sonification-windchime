@@ -2,7 +2,7 @@ import customtkinter as ctk
 import json
 from datetime import datetime
 
-import chime_update
+from chime_update import chime_update
 
 
 class TimetableConfigFrame(ctk.CTkFrame):
