@@ -113,6 +113,7 @@ class TimetableConfigFrame(ctk.CTkFrame):
 
         self.update_label()
         self.update_timeline()
+        chime_update(self.master)
 
     # =========================
     # LABEL
@@ -210,7 +211,6 @@ class TimetableConfigFrame(ctk.CTkFrame):
     def select(self, i):
         self.controller.selected_configuration = i
         self.refresh()
-        chime_update(self)
 
     def edit(self, i):
         self.controller.frames["EditTimetableConfigFrame"].set_configuration(

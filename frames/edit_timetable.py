@@ -228,6 +228,6 @@ class EditTimetableConfigFrame(ctk.CTkFrame):
         parent = self.controller.frames["TimetableConfigFrame"]
         parent.save()
         parent.refresh()
-        chime_update(self)
+        chime_update(self.master)
 
         self.controller.show_frame("TimetableConfigFrame")
