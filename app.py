@@ -102,10 +102,7 @@ class App(ctk.CTk):
         try:
             from chime_update import chime_update  # adjust import
 
-            chime_update(
-                control_mode=self.current_mode,
-                current_config=None
-            )
+            chime_update(self)
 
             print("Weather + backend updated")
 

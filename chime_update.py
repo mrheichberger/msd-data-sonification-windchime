@@ -48,13 +48,17 @@ def check_timetable(timetable_data, current_config):
     
     return None
 
-def chime_update(control_mode, current_config):
+def chime_update(self):
 
     with open(timetable_config, "r") as f:
         timetable_data = json.load(f)
     
+    control_mode = self.current_mode 
+    current_config = self.selected_configuration
+    
     weather_service = WeatherService()
-    weather_data = weather_service.fetch_weather()    
+    self.weather = weather_service.fetch_weather()    
+    weather_data = self.weather
     
     scale, key = None, None
     timetable = check_timetable(timetable_data, current_config)
