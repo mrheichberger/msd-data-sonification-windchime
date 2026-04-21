@@ -28,18 +28,6 @@ def get_target_positions():
     return target_dict
 
 
-def compute_uart_commands(current_positions, target_positions):
-    commands = {}
-
-    for key in current_positions:
-        current = current_positions[key]
-        target = target_positions[key]
-        slots_to_move = (target - current) % 6
-        commands[key] = slots_to_move
-
-    return commands
-
-
 def apply_uart_moves():
     current_positions = load_current_positions()
     target_positions = get_target_positions()
@@ -54,8 +42,26 @@ def apply_uart_moves():
             slots_to_move = uart_commands[key]
 
             if slots_to_move != 0:
-                actual_slots_moved = uart.move_motor_and_get_result(i, slots_to_move)
+                try:
+                    actual_slots_moved = uart.move_motor_and_get_result(i, slots_to_move)
 
+                    # 🔍 Check mismatch
+                    if actual_slots_moved != slots_to_move:
+                        print(
+                            f"[MISMATCH] {key}: expected {slots_to_move}, got {actual_slots_moved}"
+                        )
+                    else:
+                        print(
+                            f"[OK] {key}: moved {actual_slots_moved} slots"
+                        )
+
+                except Exception as e:
+                    print(
+                        f"[UART FAIL] {key}: expected {slots_to_move}, no response. Using expected. Error: {e}"
+                    )
+                    actual_slots_moved = slots_to_move
+
+                # Update position using actual OR fallback
                 current = current_positions[key]
                 new_pos = ((current - 1 + actual_slots_moved) % 6) + 1
                 current_positions[key] = new_pos
