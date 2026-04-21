@@ -16,8 +16,8 @@ def get_weather_mood_config(weather_data):
     # Process the weather data and update the application state
     scale, key = None, None
     
-    condition = weather_data[0]["condition"]
-    temp = weather_data[0]["temp"]
+    condition = weather_data[0]["current"]["weather"][0]["main"]
+    temp = weather_data[0]["current"]["temp"]
     
     condition_str = getCondition(condition)
     temp_range = get_temp_range(temp)
@@ -60,7 +60,8 @@ def chime_update(self):
     self.weather = weather_service.fetch_weather()    
     weather_data = self.weather
     
-    scale, key = None, None
+    scale = None
+    key = None
     timetable = check_timetable(timetable_data, current_config)
     if timetable is not None:
         print("Active timetable config found, using that...")
@@ -71,7 +72,7 @@ def chime_update(self):
         scale, key = get_weather_mood_config(weather_data)
     
     #print(f"Updating with scale: {scale}, key: {key}")
-    run_full_backend_update(control_mode, weather_data, scale, key)
+    #run_full_backend_update(control_mode, weather_data, scale, key)
     
     
 

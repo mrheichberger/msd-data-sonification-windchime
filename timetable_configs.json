@@ -1,15 +1,7 @@
 [
     {
         "name": "Config 1",
-        "scales": [
-            {
-                "date": "2026-04-17",
-                "start_time": "05:00",
-                "end_time": "12:00",
-                "scale": "Major",
-                "key": "C"
-            }
-        ]
+        "scales": []
     },
     {
         "name": "Config 2",

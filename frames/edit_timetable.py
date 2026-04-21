@@ -11,13 +11,16 @@ class EditTimetableConfigFrame(ctk.CTkFrame):
         self.config = None
         self.index = None
 
+        self.grid_rowconfigure(6, weight=1)  # entries expand
+        self.grid_columnconfigure(0, weight=1)
+        
         # ---------------- HEADER ----------------
         ctk.CTkLabel(self, text="Edit Configuration",
-                     font=("Helvetica", 20)).pack(pady=10)
+                     font=("Helvetica", 20)).grid(row=0, column=0, pady=10)
 
         # ---------------- NAME ----------------
         self.name_entry = ctk.CTkEntry(self, placeholder_text="Name")
-        self.name_entry.pack(pady=5)
+        self.name_entry.grid(row=1, column=0, pady=5, sticky="ew")
 
         # ---------------- DATE ----------------
         self.date = DateEntry(
@@ -28,11 +31,11 @@ class EditTimetableConfigFrame(ctk.CTkFrame):
             borderwidth=2,
             date_pattern='yyyy-mm-dd'
         )
-        self.date.pack(pady=5)
+        self.date.grid(row=2, column=0, pady=5)
 
         # ---------------- TIME INPUTS ----------------
         time_frame = ctk.CTkFrame(self)
-        time_frame.pack(pady=10)
+        time_frame.grid(row=3, column=0, pady=10, sticky="ew")
 
         minute_values = [f"{i:02d}" for i in range(0, 60, 5)]
 
@@ -68,7 +71,7 @@ class EditTimetableConfigFrame(ctk.CTkFrame):
 
         # ---------------- SCALE + KEY ----------------
         sk_frame = ctk.CTkFrame(self)
-        sk_frame.pack(pady=5)
+        sk_frame.grid(row=4, column=0, pady=10)
 
         self.scale = ctk.CTkOptionMenu(
             sk_frame, values=["Major", "Minor", "Blues", "Suspended", "Pentatonic", "Custom"]
@@ -82,15 +85,15 @@ class EditTimetableConfigFrame(ctk.CTkFrame):
 
         # ---------------- ADD BUTTON ----------------
         ctk.CTkButton(self, text="Add Entry",
-                      command=self.add_entry).pack(pady=10)
+                      command=self.add_entry).grid(row=5, column=0, pady=10)
 
         # ---------------- ENTRY LIST ----------------
         self.entries_frame = ctk.CTkScrollableFrame(self)
-        self.entries_frame.pack(fill="both", expand=True, pady=10)
+        self.entries_frame.grid(row=6, column=0, sticky="nsew", padx=10, pady=10)
 
         # ---------------- BUTTON ROW ----------------
         button_row = ctk.CTkFrame(self)
-        button_row.pack(pady=10)
+        button_row.grid(row=7, column=0, pady=10, sticky="ew")
         button_row.background_color="transparent"
 
         ctk.CTkButton(button_row, text="Save",
