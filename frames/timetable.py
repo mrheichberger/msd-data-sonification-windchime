@@ -211,7 +211,7 @@ class TimetableConfigFrame(ctk.CTkFrame):
         self.controller.selected_configuration = i
         self.refresh()
 
-        chime_update(self)
+        chime_update(self.master)
 
     def edit(self, i):
         self.controller.frames["EditTimetableConfigFrame"].set_configuration(
