@@ -100,13 +100,13 @@ def chime_update(self):
         scale, key = get_weather_mood_config(weather_data)
     
     print(f"[CHIME_UPDATE] Updating with scale={scale}, key={key}")
-    #run_full_backend_update(
-    #    control_mode,
-    #    weather_data,
-    #    scale,
-    #    key,
-    #    reason="weather changed" if weather_changed else "scheduled refresh"
-    #)
+    run_full_backend_update(
+        control_mode,
+        weather_data,
+        scale,
+        key,
+        reason="weather changed" if weather_changed else "scheduled refresh"
+    )
     
     
 
