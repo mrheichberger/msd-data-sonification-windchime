@@ -17,7 +17,7 @@ import os
 
 
 class UARTComm:
-    def __init__(self, port=None, baudrate=115200, timeout=1):
+    def __init__(self, port=None, baudrate=115200, timeout=10):
         self.port = port
         self.baudrate = baudrate
         self.timeout = timeout
@@ -85,15 +85,26 @@ class UARTComm:
         if self.ser is None:
             raise RuntimeError("UART not connected")
 
-        response = self.ser.readline()
-        print("Raw bytes:", response)
+        deadline = time.time() + self.timeout
+        attempt = 0
 
-        decoded = response.decode("utf-8", errors="ignore").strip()
+        while time.time() < deadline:
+            attempt += 1
+            response = self.ser.readline()
+            print(f"[UART] Raw bytes attempt {attempt}: {response!r}")
 
-        if decoded == "":
-            raise RuntimeError("No UART response received")
+            decoded = response.decode("utf-8", errors="ignore").strip()
+            if decoded == "":
+                continue
 
-        return int(decoded)
+            try:
+                value = int(decoded)
+                print(f"[UART] Parsed response: {value}")
+                return value
+            except ValueError:
+                print(f"[UART] Ignoring non-integer response: {decoded!r}")
+
+        raise RuntimeError(f"No valid UART response received within {self.timeout} seconds")
 
     def move_motor_and_get_result(self, motor_num: int, slots: int) -> int:
         self.send_move_command(motor_num, slots)

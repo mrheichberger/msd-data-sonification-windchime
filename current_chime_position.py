@@ -1,5 +1,6 @@
 from main_backend import update_final_json
 import json
+import time
 from chime_mapper import ChimeMapper
 from uart_service import UARTComm
 
@@ -78,7 +79,15 @@ def apply_uart_moves():
 
             if slots_to_move != 0:
                 try:
+                    started_at = time.time()
+                    print(
+                        f"[UART] {key}: command start motor={i}, requested_slots={slots_to_move}"
+                    )
                     actual_slots_moved = uart.move_motor_and_get_result(i, slots_to_move)
+                    elapsed = time.time() - started_at
+                    print(
+                        f"[UART] {key}: response received in {elapsed:.2f}s, actual_slots={actual_slots_moved}"
+                    )
 
                     # 🔍 Check mismatch
                     if actual_slots_moved != slots_to_move:
@@ -92,11 +101,11 @@ def apply_uart_moves():
 
                 except Exception as e:
                     print(
-                        f"[UART FAIL] {key}: expected {slots_to_move}, no response. Using expected. Error: {e}"
+                        f"[UART FAIL] {key}: expected {slots_to_move}, no valid response in timeout. Using expected fallback. Error: {e}"
                     )
                     actual_slots_moved = slots_to_move
 
-                # Update position using actual OR fallback
+                # Update position from actual UART feedback or expected fallback
                 current = current_positions[key]
                 new_pos = ((current - 1 + actual_slots_moved) % 6) + 1
                 current_positions[key] = new_pos
