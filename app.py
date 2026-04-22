@@ -1,5 +1,6 @@
 import sys
 import customtkinter as ctk
+import threading
 
 from frames.home import HomeFrame
 from frames.timetable import TimetableConfigFrame
@@ -22,7 +23,7 @@ class App(ctk.CTk):
         self.geometry("800x600")
         self.title("Windchimes")
 
-        self.attributes("-fullscreen", True)
+        #self.attributes("-fullscreen", True)
     
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
@@ -120,19 +121,18 @@ class App(ctk.CTk):
 
     def update_weather(self):
         print("[APP] update_weather start")
-        try:
-            from chime_update import chime_update  # adjust import
 
-            chime_update(self)
+        def task():
+            try:
+                from chime_update import chime_update
+                chime_update(self)
+                print("[APP] Weather + backend updated")
+            except Exception as e:
+                print("[APP] Update error:", e)
 
-            print("[APP] Weather + backend updated")
+        threading.Thread(target=task, daemon=True).start()
 
-        except Exception as e:
-            print("[APP] Update error:", e)
-
-        finally:
-            print("[APP] Scheduling next weather update in 10 minutes")
-            self.after(1000 * 60 * 10, self.update_weather)
+        self.after(100 * 60 * 10, self.update_weather)
 
 
 if __name__ == "__main__":
