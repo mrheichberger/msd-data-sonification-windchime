@@ -6,11 +6,18 @@
 #include "uart_comm.h"
 
 
+/*
+ * Geneva has 6 indexed positions per output revolution.
+ * Slot progress uses encoder.c quadrature (QDEC_TABLE → pos). Do not assume
+ * encoder "detents" × counts-per-detent; map only: quadrature counts per ONE
+ * Geneva slot. Calibrate: log encoder_get_position() before/after exactly one
+ * physical slot advance, set that delta here (default 16 matched old 96/6 guess).
+ */
 #define GENEVA_SLOTS_PER_REV 6
-#define ENCODER_DETENTS_PER_REV 24
-#define ENCODER_COUNTS_PER_DETENT 4
-#define ENCODER_COUNTS_PER_REV (ENCODER_DETENTS_PER_REV * ENCODER_COUNTS_PER_DETENT)
-#define COUNTS_PER_SLOT (ENCODER_COUNTS_PER_REV / GENEVA_SLOTS_PER_REV)
+#ifndef QUADRATURE_COUNTS_PER_GENEVA_SLOT
+#define QUADRATURE_COUNTS_PER_GENEVA_SLOT 16
+#endif
+#define COUNTS_PER_SLOT QUADRATURE_COUNTS_PER_GENEVA_SLOT
 #define SLOT_THRESHOLD_COUNTS 3
 #define MOVE_TIMEOUT_MS 15000
 
@@ -21,13 +28,15 @@ int32_t move_geneva_slots(motor_driver_t *m, encoder_t *enc, int32_t requested_s
     }
 
     int32_t start_counts = encoder_get_position(enc);
+    uint32_t start_edges = encoder_get_quad_edge_count(enc);
     int32_t start_slot = encoder_get_slot(enc, COUNTS_PER_SLOT, SLOT_THRESHOLD_COUNTS);
     int32_t target_slot = start_slot + requested_slots;
 
     printf("move_geneva_slots() START\n");
-    printf("  counts/rev=%d counts/slot=%d threshold=%d\n",
-           ENCODER_COUNTS_PER_REV, COUNTS_PER_SLOT, SLOT_THRESHOLD_COUNTS);
+    printf("  geneva_slots=%d quad_counts/slot=%d threshold=%d (from QDEC pos)\n",
+           GENEVA_SLOTS_PER_REV, COUNTS_PER_SLOT, SLOT_THRESHOLD_COUNTS);
     printf("  start_counts    = %ld\n", (long)start_counts);
+    printf("  start_quad_edges= %lu\n", (unsigned long)start_edges);
     printf("  start_slot      = %ld\n", (long)start_slot);
     printf("  requested_slots = %ld\n", (long)requested_slots);
     printf("  target_slot     = %ld\n", (long)target_slot);
@@ -63,11 +72,14 @@ int32_t move_geneva_slots(motor_driver_t *m, encoder_t *enc, int32_t requested_s
     sleep_ms(10);
 
     int32_t end_counts = encoder_get_position(enc);
+    uint32_t end_edges = encoder_get_quad_edge_count(enc);
     int32_t end_slot = encoder_get_slot(enc, COUNTS_PER_SLOT, SLOT_THRESHOLD_COUNTS);
     int32_t actual_slots_moved = end_slot - start_slot;
 
     printf("move_geneva_slots() END\n");
     printf("  end_counts         = %ld\n", (long)end_counts);
+    printf("  end_quad_edges     = %lu (delta %lu)\n",
+           (unsigned long)end_edges, (unsigned long)(end_edges - start_edges));
     printf("  end_slot           = %ld\n", (long)end_slot);
     printf("  actual_slots_moved = %ld\n", (long)actual_slots_moved);
 

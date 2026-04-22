@@ -41,6 +41,7 @@ static void encoder_gpio_isr(uint gpio, uint32_t events) {
     if (delta != 0) {
         uint32_t status = save_and_disable_interrupts();
         e->pos += delta;
+        e->quad_valid_edges += 1U;
         restore_interrupts(status);
     }
 
@@ -60,6 +61,7 @@ void encoder_init(encoder_t *e) {
     }
 
     e->pos = 0;
+    e->quad_valid_edges = 0;
     e->rot90 = 0;
     e->rot_accum = 0;
     e->last_pos_for_rot = 0;
@@ -98,9 +100,17 @@ int32_t encoder_get_position(const encoder_t *e) {
     return v;
 }
 
+uint32_t encoder_get_quad_edge_count(const encoder_t *e) {
+    uint32_t status = save_and_disable_interrupts();
+    uint32_t n = e->quad_valid_edges;
+    restore_interrupts(status);
+    return n;
+}
+
 void encoder_reset(encoder_t *e) {
     uint32_t status = save_and_disable_interrupts();
     e->pos = 0;
+    e->quad_valid_edges = 0;
     e->rot90 = 0;
     e->rot_accum = 0;
     e->last_pos_for_rot = 0;
@@ -114,8 +124,8 @@ int32_t encoder_get_detents(const encoder_t *e, int32_t counts_per_detent) {
     return encoder_get_position(e) / counts_per_detent;
 }
 
-int32_t encoder_get_slot(encoder_t *e, int32_t counts_per_90, int32_t threshold) {
-    if (counts_per_90 <= 0) return 0;
+int32_t encoder_get_slot(encoder_t *e, int32_t counts_per_slot, int32_t threshold) {
+    if (counts_per_slot <= 0) return 0;
     if (threshold < 0) threshold = 0;
 
     uint32_t status = save_and_disable_interrupts();
@@ -126,16 +136,16 @@ int32_t encoder_get_slot(encoder_t *e, int32_t counts_per_90, int32_t threshold)
 
     e->rot_accum += delta;
 
-    int32_t trigger = counts_per_90 - threshold;
+    int32_t trigger = counts_per_slot - threshold;
 
     while (e->rot_accum >= trigger) {
         e->rot90 += 1;
-        e->rot_accum -= counts_per_90;
+        e->rot_accum -= counts_per_slot;
     }
 
     while (e->rot_accum <= -trigger) {
         e->rot90 -= 1;
-        e->rot_accum += counts_per_90;
+        e->rot_accum += counts_per_slot;
     }
 
     int32_t out = e->rot90;
