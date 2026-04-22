@@ -17,6 +17,14 @@ def save_current_positions(positions):
         json.dump(positions, f, indent=4)
 
 
+def load_final_notes_snapshot():
+    try:
+        with open(FINAL_PATH, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return None
+
+
 def get_target_positions():
     mapper = ChimeMapper(FINAL_PATH)
     target_list = mapper.map_final_notes_to_positions()
@@ -39,9 +47,13 @@ def compute_uart_commands(current_positions, target_positions):
     return commands
 
 def apply_uart_moves():
+    print("[UART] Preparing UART move application")
     current_positions = load_current_positions()
     target_positions = get_target_positions()
     uart_commands = compute_uart_commands(current_positions, target_positions)
+    print(f"[UART] Current positions: {current_positions}")
+    print(f"[UART] Target positions: {target_positions}")
+    print(f"[UART] Computed commands: {uart_commands}")
 
     uart = UARTComm()
     uart.connect()
@@ -75,21 +87,45 @@ def apply_uart_moves():
                 current = current_positions[key]
                 new_pos = ((current - 1 + actual_slots_moved) % 6) + 1
                 current_positions[key] = new_pos
+            else:
+                print(f"[UART] {key}: already aligned, skipping")
 
         save_current_positions(current_positions)
+        print(f"[UART] Saved updated positions: {current_positions}")
 
     finally:
         uart.close()
+        print("[UART] UART connection closed")
 
 
-def run_full_backend_update(control_mode, weather_data=None, selected_scale=None, selected_key=None):
+def run_full_backend_update(control_mode, weather_data=None, selected_scale=None, selected_key=None, reason="unspecified"):
+    print(f"[RUN_FULL_BACKEND_UPDATE] reason={reason}")
+    print(f"[RUN_FULL_BACKEND_UPDATE] control_mode={control_mode}")
+    print(f"[RUN_FULL_BACKEND_UPDATE] selected_scale={selected_scale}, selected_key={selected_key}")
+    print(f"[RUN_FULL_BACKEND_UPDATE] weather_data_present={weather_data is not None}")
+
+    before_notes = load_final_notes_snapshot()
+    print(f"[RUN_FULL_BACKEND_UPDATE] final_notes before update: {before_notes}")
+
     update_final_json(
         control_mode=control_mode,
         weather_data=weather_data,
         selected_scale=selected_scale,
         selected_key=selected_key
     )
-    apply_uart_moves()
+    after_notes = load_final_notes_snapshot()
+    print(f"[RUN_FULL_BACKEND_UPDATE] final_notes after update: {after_notes}")
+
+    final_notes_changed = before_notes != after_notes
+    print(f"[RUN_FULL_BACKEND_UPDATE] final_notes_changed={final_notes_changed}")
+
+    if final_notes_changed:
+        print("[RUN_FULL_BACKEND_UPDATE] final_notes changed, applying UART moves")
+        apply_uart_moves()
+        print("[RUN_FULL_BACKEND_UPDATE] UART moves applied")
+    else:
+        print("[RUN_FULL_BACKEND_UPDATE] final_notes unchanged, skipping UART")
+    
 
 
     '''

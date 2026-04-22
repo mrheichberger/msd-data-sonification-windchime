@@ -208,6 +208,7 @@ class TimetableConfigFrame(ctk.CTkFrame):
     # ACTIONS
     # =========================
     def select(self, i):
+        print(f"[TIMETABLE] Selecting configuration index={i}")
         self.controller.selected_configuration = i
         self.refresh()
 
@@ -229,12 +230,15 @@ class TimetableConfigFrame(ctk.CTkFrame):
         self.controller.show_frame("EditTimetableConfigFrame")
 
     def delete_config(self, i):
+        print(f"[TIMETABLE] Deleting configuration index={i}")
         del self.configurations[i]
         self.controller.selected_configuration = None
         self.save()
         self.refresh()
+        chime_update(self.master)
 
     def delete_entry(self, index):
+        print(f"[TIMETABLE] Deleting entry index={index}")
         config = self.configurations[self.controller.selected_configuration]
 
         sorted_entries = sorted(
@@ -251,3 +255,4 @@ class TimetableConfigFrame(ctk.CTkFrame):
 
         self.save()
         self.refresh()
+        chime_update(self.master)

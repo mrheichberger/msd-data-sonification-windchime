@@ -14,7 +14,7 @@ int32_t move_geneva_slots(motor_driver_t *m, encoder_t *enc, int32_t requested_s
     if (requested_slots <= 0) {
         return 0;
     }
-
+    
     int32_t start_counts = encoder_get_position(enc);
     int32_t target_counts = start_counts + (requested_slots * COUNTS_PER_SLOT);
 
@@ -287,10 +287,13 @@ int main() {
     int32_t requested_motor = 0;
     int32_t requested_slots = 0;
     bool motor_received = false;
-/*
+
     while (1) {
         //--------------
+
         //just for debug start here 
+
+        /*
   printf("TURNING ALL MOTORS ON\n");
 
     // Turn all motors ON
@@ -308,10 +311,13 @@ int main() {
     }
 
     sleep_ms(5000); // 5 seconds OFF
-}
+}}
+
 //-------------------
         //just for debug end here
+
         */
+        
         if (!motor_received) {
             if (uart_comm_read_int(&requested_motor)) {
                 printf("UART received motor number: %ld\n", (long)requested_motor);
@@ -347,5 +353,5 @@ int main() {
 
         sleep_ms(5);
     }
-        
+}
 

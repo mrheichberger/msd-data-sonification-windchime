@@ -49,6 +49,7 @@ def check_timetable(timetable_data, current_config):
     return None
 
 def chime_update(self):
+    print("[CHIME_UPDATE] Starting chime_update")
 
     with open(timetable_config, "r") as f:
         timetable_data = json.load(f)
@@ -57,22 +58,35 @@ def chime_update(self):
     current_config = self.selected_configuration
     
     weather_service = WeatherService()
+    print("[CHIME_UPDATE] Fetching weather")
     weather_data, _ = weather_service.fetch_weather()
+    previous_weather = getattr(self, "last_weather_snapshot", None)
     self.weather = weather_data
+    self.last_weather_snapshot = weather_data
+
+    weather_changed = previous_weather != weather_data
+    print(f"[CHIME_UPDATE] weather_changed={weather_changed}")
+    print(f"[CHIME_UPDATE] control_mode={control_mode}, current_config={current_config}")
     
     scale = None
     key = None
     timetable = check_timetable(timetable_data, current_config)
     if timetable is not None:
-        print("Active timetable config found, using that...")
+        print("[CHIME_UPDATE] Active timetable config found, using that...")
         scale = timetable["scale"]
         key = timetable["key"]
     else:
-        print("No active timetable config found, checking weather...")
+        print("[CHIME_UPDATE] No active timetable config found, checking weather...")
         scale, key = get_weather_mood_config(weather_data)
     
-    #print(f"Updating with scale: {scale}, key: {key}")
-    run_full_backend_update(control_mode, weather_data, scale, key)
+    print(f"[CHIME_UPDATE] Updating with scale={scale}, key={key}")
+    run_full_backend_update(
+        control_mode,
+        weather_data,
+        scale,
+        key,
+        reason="weather changed" if weather_changed else "scheduled refresh"
+    )
     
     
 

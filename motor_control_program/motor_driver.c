@@ -76,7 +76,8 @@ void motor_set_speed(motor_driver_t *m, float speed)
     void motor_forward_full(motor_driver_t *m)
 {
     uint16_t wrap = m->wrap ? m->wrap : 10000;
-    pwm_set_gpio_level(m->pwm_pin, wrap);
+    pwm_set_gpio_level(m->pwm_pin, 0.85f * wrap);
+    //pwm_set_gpio_level(m->pwm_pin, wrap);
 }
 
 

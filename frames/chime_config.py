@@ -178,6 +178,7 @@ class ChimeConfigFrame(ctk.CTkFrame):
         return {}
 
     def save_states(self):
+        print("[CHIME_CONFIG] Saving chime states")
         scale = self.current_state.get()
 
         if scale == "Custom":
@@ -205,6 +206,9 @@ class ChimeConfigFrame(ctk.CTkFrame):
                 self.controller.chime_states = self.saved_states["Custom"]
             else:
                 self.controller.chime_states = self.saved_states[scale][key]
+
+            if self.controller.current_mode == "User Mode":
+                self.controller.run_backend_update(reason="chime state file updated")
 
         except Exception as e:
             print("Error saving:", e)

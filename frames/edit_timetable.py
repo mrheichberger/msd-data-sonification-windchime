@@ -223,6 +223,7 @@ class EditTimetableConfigFrame(ctk.CTkFrame):
     # SAVE
     # =========================
     def save(self):
+        print("[EDIT_TIMETABLE] Saving timetable configuration")
         self.config["name"] = self.name_entry.get()
 
         parent = self.controller.frames["TimetableConfigFrame"]

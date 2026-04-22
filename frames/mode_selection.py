@@ -22,5 +22,6 @@ class ModeSelectionFrame(ctk.CTkFrame):
         self.selected_mode = mode
 
     def confirm(self):
-        self.controller.current_mode = self.selected_mode
+        print(f"[MODE_SELECTION] Confirming mode={self.selected_mode}")
+        self.controller.set_mode(self.selected_mode)
         self.controller.show_frame("HomeFrame")

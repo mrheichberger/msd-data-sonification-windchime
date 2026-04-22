@@ -33,6 +33,7 @@ class App(ctk.CTk):
         self.selected_key = None
         self.weather = {}
         self.uv = None
+        self.last_weather_snapshot = None
 
         self.weather_service = WeatherService()
 
@@ -64,7 +65,7 @@ class App(ctk.CTk):
 
         if hasattr(frame, "on_show"):
             frame.on_show()
-
+    '''
     def run_backend_update(self):
         try:
             if self.current_mode == "Weather Mode":
@@ -78,6 +79,23 @@ class App(ctk.CTk):
                     selected_scale=self.selected_scale,
                     selected_key=self.selected_key
                 )
+    '''
+    def run_backend_update(self, reason="manual"):
+        print(f"[APP] run_backend_update called. reason={reason}, mode={self.current_mode}")
+        try:
+            if self.current_mode == "Weather Mode":
+                run_full_backend_update(
+                    control_mode="Weather Mode",
+                    weather_data=self.weather,
+                    reason=reason
+                )
+            else:
+                run_full_backend_update(
+                    control_mode="User Mode",
+                    selected_scale=self.selected_scale,
+                    selected_key=self.selected_key,
+                    reason=reason
+                )
 
             print("Backend update complete.")
             import json
@@ -90,27 +108,30 @@ class App(ctk.CTk):
             print("Backend update error:", e)
 
     def set_mode(self, mode):
+        print(f"[APP] set_mode called with mode={mode}")
         self.current_mode = mode
-        self.run_backend_update()
+        self.run_backend_update(reason="mode changed")
 
     def set_user_selection(self, scale, key=None):
+        print(f"[APP] set_user_selection called with scale={scale}, key={key}")
         self.selected_scale = scale
         self.selected_key = key
-        self.run_backend_update()
+        self.run_backend_update(reason="user selection changed")
 
     def update_weather(self):
+        print("[APP] update_weather start")
         try:
             from chime_update import chime_update  # adjust import
 
             chime_update(self)
 
-            print("Weather + backend updated")
+            print("[APP] Weather + backend updated")
 
         except Exception as e:
-            print("Update error:", e)
+            print("[APP] Update error:", e)
 
         finally:
-            # 🔁 run again in 10 minutes
+            print("[APP] Scheduling next weather update in 10 minutes")
             self.after(1000 * 60 * 10, self.update_weather)
 
 

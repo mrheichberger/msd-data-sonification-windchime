@@ -11,22 +11,59 @@
 #-------------------------------------------
 
 import serial
+from serial.tools import list_ports
 import time
+import os
 
 
 class UARTComm:
-    def __init__(self, port="/dev/serial0", baudrate=115200, timeout=1):
+    def __init__(self, port=None, baudrate=115200, timeout=1):
         self.port = port
         self.baudrate = baudrate
         self.timeout = timeout
         self.ser = None
 
+    def _resolve_port(self) -> str:
+        # Explicit argument takes top priority.
+        if self.port:
+            return self.port
+
+        # Environment variable is useful when running from UI/automation.
+        env_port = os.getenv("UART_PORT")
+        if env_port:
+            return env_port
+
+        # Keep legacy Linux behavior for Raspberry Pi.
+        if os.path.exists("/dev/serial0"):
+            return "/dev/serial0"
+
+        # Fallback for desktop development: pick a likely USB/UART adapter.
+        ports = list(list_ports.comports())
+        if not ports:
+            raise RuntimeError(
+                "No serial ports detected. Set UART_PORT or pass port=..."
+            )
+
+        preferred = ("pico", "usb serial", "cp210", "ch340", "ftdi")
+        for p in ports:
+            descriptor = f"{p.device} {p.description}".lower()
+            if any(token in descriptor for token in preferred):
+                return p.device
+
+        # Final fallback to first enumerated port.
+        return ports[0].device
+
     def connect(self):
+        resolved_port = self._resolve_port()
+        self.port = resolved_port
+        print(f"[UART] Opening {resolved_port} @ {self.baudrate} baud")
         self.ser = serial.Serial(
-            port=self.port,
+            port=resolved_port,
             baudrate=self.baudrate,
             timeout=self.timeout
         )
+        self.ser.reset_input_buffer()
+        self.ser.reset_output_buffer()
         time.sleep(2)
 
     def send_move_command(self, motor_num: int, slots: int):
@@ -35,6 +72,8 @@ class UARTComm:
 
         if not 1 <= motor_num <= 8:
             raise ValueError("motor_num must be between 1 and 8")
+        
+        print(f"[PI → PICO] Sending motor={motor_num}, slots={slots}")
 
         motor_message = f"{motor_num}\n"
         slots_message = f"{slots}\n"

@@ -59,6 +59,7 @@ class WeatherMoodFrame(ctk.CTkFrame):
 
     # ---------------- SAVE CONFIG ----------------
     def apply_settings(self):
+        print("[WEATHER_MOOD] Applying weather mood settings")
         weather = self.weather_dropdown.get()
         temp = self.temp_dropdown.get()
         scale = self.scale_dropdown.get()
@@ -100,3 +101,4 @@ class WeatherMoodFrame(ctk.CTkFrame):
             json.dump(data, f, indent=4)
 
         print(f"Saved to {filepath}")
+        self.controller.run_backend_update(reason="weather mood config updated")

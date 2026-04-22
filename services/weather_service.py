@@ -23,21 +23,28 @@ class WeatherService:
 
     def fetch_weather(self):
         if not self.enabled:
+            print("[WEATHER] Service disabled; returning empty weather data")
             return {}, None
 
+        print("[WEATHER] Requesting current weather")
         weather = requests.get(
             "https://api.openweathermap.org/data/2.5/weather?lat=43.0826701&lon=-77.6729322&units=imperial&appid="
-            + self.api_keys["openweathermap"]
+            + self.api_keys["openweathermap"],
+            timeout=10
         ).json()
 
+        print("[WEATHER] Requesting forecast")
         forecast = requests.get(
             "https://api.openweathermap.org/data/2.5/forecast?lat=43.0826701&lon=-77.6729322&units=imperial&appid="
-            + self.api_keys["openweathermap"]
+            + self.api_keys["openweathermap"],
+            timeout=10
         ).json()
 
+        print("[WEATHER] Requesting AQI")
         aqi = requests.get(
             "https://api.openweathermap.org/data/2.5/air_pollution?lat=43.0826701&lon=-77.6729322&appid="
-            + self.api_keys["openweathermap"]
+            + self.api_keys["openweathermap"],
+            timeout=10
         ).json()['list'][-1]['main']['aqi']
 
         weather_data = {
@@ -62,4 +69,5 @@ class WeatherService:
         }
 
         uv = None
+        print(f"[WEATHER] Weather fetch complete: temp={weather_data['current']['temp']}, condition={weather_data['current']['weather'][0]['main']}")
         return weather_data, uv
