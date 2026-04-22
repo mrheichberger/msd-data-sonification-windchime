@@ -35,6 +35,19 @@ def get_target_positions():
 
     return target_dict
 
+
+def positions_need_update():
+    """
+    Returns True when any set's current position differs from the mapped target.
+    """
+    current_positions = load_current_positions()
+    target_positions = get_target_positions()
+
+    for key, current in current_positions.items():
+        if target_positions.get(key) != current:
+            return True
+    return False
+
 def compute_uart_commands(current_positions, target_positions):
     commands = {}
 
@@ -118,13 +131,20 @@ def run_full_backend_update(control_mode, weather_data=None, selected_scale=None
 
     final_notes_changed = before_notes != after_notes
     print(f"[RUN_FULL_BACKEND_UPDATE] final_notes_changed={final_notes_changed}")
+    positions_changed = positions_need_update()
+    print(f"[RUN_FULL_BACKEND_UPDATE] positions_need_update={positions_changed}")
 
-    if final_notes_changed:
-        print("[RUN_FULL_BACKEND_UPDATE] final_notes changed, applying UART moves")
+    if final_notes_changed or positions_changed:
+        if final_notes_changed and positions_changed:
+            print("[RUN_FULL_BACKEND_UPDATE] notes changed and positions differ, applying UART moves")
+        elif final_notes_changed:
+            print("[RUN_FULL_BACKEND_UPDATE] final_notes changed, applying UART moves")
+        else:
+            print("[RUN_FULL_BACKEND_UPDATE] final_notes unchanged but positions differ, applying UART moves")
         apply_uart_moves()
         print("[RUN_FULL_BACKEND_UPDATE] UART moves applied")
     else:
-        print("[RUN_FULL_BACKEND_UPDATE] final_notes unchanged, skipping UART")
+        print("[RUN_FULL_BACKEND_UPDATE] final_notes unchanged and positions already aligned, skipping UART")
     
 
 
