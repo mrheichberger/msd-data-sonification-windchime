@@ -9,7 +9,6 @@ add_executable(motor_control_program_single_debug
     main.c
     ../motor_control_program/motor_driver.c
     ../motor_control_program/encoder.c
-    ../motor_control_program/uart_comm.c
 )
 
 # Print debugging over USB serial.
@@ -19,7 +18,6 @@ pico_enable_stdio_uart(motor_control_program_single_debug 0)
 target_link_libraries(motor_control_program_single_debug
     pico_stdlib
     hardware_pwm
-    hardware_uart
     hardware_gpio
 )
 

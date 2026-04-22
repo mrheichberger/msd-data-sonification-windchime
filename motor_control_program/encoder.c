@@ -4,6 +4,11 @@
 
 #define MAX_GPIO 30
 
+/* Slot advance from quad_valid_edges since last slot boundary (encoder.h). */
+#define SLOT_EDGE_STALL_MORE_THAN 10U
+#define SLOT_EDGE_BURST_MORE_THAN 50U
+#define STALL_POS_EPS_DEFAULT 4
+
 // Map each GPIO number to the encoder that owns it
 static encoder_t *gpio_to_encoder[MAX_GPIO] = {0};
 static bool encoder_irq_callback_installed = false;
@@ -63,8 +68,8 @@ void encoder_init(encoder_t *e) {
     e->pos = 0;
     e->quad_valid_edges = 0;
     e->rot90 = 0;
-    e->rot_accum = 0;
-    e->last_pos_for_rot = 0;
+    e->edges_at_slot_boundary = 0;
+    e->pos_at_slot_boundary = 0;
     e->prev_state = encoder_read_state(e);
 
     gpio_to_encoder[e->pin_a] = e;
@@ -112,8 +117,8 @@ void encoder_reset(encoder_t *e) {
     e->pos = 0;
     e->quad_valid_edges = 0;
     e->rot90 = 0;
-    e->rot_accum = 0;
-    e->last_pos_for_rot = 0;
+    e->edges_at_slot_boundary = 0;
+    e->pos_at_slot_boundary = 0;
     restore_interrupts(status);
 }
 
@@ -125,27 +130,35 @@ int32_t encoder_get_detents(const encoder_t *e, int32_t counts_per_detent) {
 }
 
 int32_t encoder_get_slot(encoder_t *e, int32_t counts_per_slot, int32_t threshold) {
-    if (counts_per_slot <= 0) return 0;
-    if (threshold < 0) threshold = 0;
+    (void)counts_per_slot;
+
+    int32_t pos_eps = threshold > 0 ? threshold : STALL_POS_EPS_DEFAULT;
 
     uint32_t status = save_and_disable_interrupts();
 
-    int32_t pos = e->pos;
-    int32_t delta = pos - e->last_pos_for_rot;
-    e->last_pos_for_rot = pos;
+    uint32_t ecur = e->quad_valid_edges;
+    int32_t pcur = e->pos;
+    uint32_t edge_base = e->edges_at_slot_boundary;
 
-    e->rot_accum += delta;
-
-    int32_t trigger = counts_per_slot - threshold;
-
-    while (e->rot_accum >= trigger) {
+    /* 1) Burst: each >50 new edges since last stored edge count → +1 slot; remember edges + pos. */
+    uint32_t d_edges = ecur - edge_base;
+    while (d_edges > SLOT_EDGE_BURST_MORE_THAN) {
         e->rot90 += 1;
-        e->rot_accum -= counts_per_slot;
+        edge_base += SLOT_EDGE_BURST_MORE_THAN;
+        e->edges_at_slot_boundary = edge_base;
+        e->pos_at_slot_boundary = pcur;
+        d_edges = ecur - edge_base;
     }
 
-    while (e->rot_accum <= -trigger) {
-        e->rot90 -= 1;
-        e->rot_accum += counts_per_slot;
+    /* 2) Stall: >10 edges while integrated pos barely changed ("same number"). */
+    d_edges = ecur - e->edges_at_slot_boundary;
+    int32_t d_pos = pcur - e->pos_at_slot_boundary;
+    if (d_edges > SLOT_EDGE_STALL_MORE_THAN) {
+        if (d_pos <= pos_eps && d_pos >= -pos_eps) {
+            e->rot90 += 1;
+            e->edges_at_slot_boundary = ecur;
+            e->pos_at_slot_boundary = pcur;
+        }
     }
 
     int32_t out = e->rot90;
