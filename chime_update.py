@@ -34,18 +34,39 @@ def get_weather_mood_config(weather_data):
 def check_timetable(timetable_data, current_config):
     if current_config is None:
         return None
+
+    if current_config >= len(timetable_data):
+        print("[TIMETABLE] Invalid config index")
+        return None
+
+    config = timetable_data[current_config]
+
+    if not config.get("scales"):
+        print(f"[TIMETABLE] No scales defined for config index: {current_config}")
+        return None
     
-    now = datetime.datetime.now()
-    current_time = now.strftime("%H:%M")
+    print(f"[TIMETABLE] Checking timetable for config index: {current_config}")
     
-    for config in timetable_data:
-        if config["name"] == current_config:
-            start_time = config["start_time"]
-            end_time = config["end_time"]
-            
-            if (start_time <= current_time <= end_time):
-                return {"scale": config["scale"], "key": config["key"]}
+    for i in range(len(timetable_data[current_config]["scales"])):
+        
+        if (timetable_data[current_config]["scales"][i]["date"] != datetime.datetime.now().strftime("%Y-%m-%d")):
+            print(f"[TIMETABLE] Skipping scale index {i} due to date mismatch")
+            continue
+        
+        start_time = timetable_data[current_config]["scales"][i]["start_time"]
+        end_time = timetable_data[current_config]["scales"][i]["end_time"]
+        print (f"[TIMETABLE] Current time: {datetime.datetime.now().strftime('%H:%M')}, Start time: {start_time}, End time: {end_time}")
+        
+        now = datetime.datetime.now()
+        current_time = now.strftime("%H:%M")
+        
+        if (start_time <= current_time <= end_time):
+            print(f"[TIMETABLE] Current time is within the range for config index: {current_config}")
+            scale = timetable_data[current_config]["scales"][i]["scale"]
+            key = timetable_data[current_config]["scales"][i]["key"]
+            return { "scale": scale, "key": key }
     
+    print(f"[TIMETABLE] Current time is NOT within the range for config index: {current_config}")
     return None
 
 def chime_update(self):
@@ -57,9 +78,8 @@ def chime_update(self):
     control_mode = self.current_mode 
     current_config = self.selected_configuration
     
-    weather_service = WeatherService()
     print("[CHIME_UPDATE] Fetching weather")
-    weather_data, _ = weather_service.fetch_weather()
+    weather_data, _ = self.weather_service.fetch_weather()
     previous_weather = getattr(self, "last_weather_snapshot", None)
     self.weather = weather_data
     self.last_weather_snapshot = weather_data

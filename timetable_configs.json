@@ -3,24 +3,17 @@
         "name": "Config 1",
         "scales": [
             {
-                "date": "2026-04-15",
-                "start_time": "00:00",
-                "end_time": "00:00",
+                "date": "2026-04-22",
+                "start_time": "16:35",
+                "end_time": "16:40",
                 "scale": "Major",
                 "key": "C"
             },
             {
-                "date": "2026-04-23",
-                "start_time": "00:00",
-                "end_time": "00:00",
-                "scale": "Major",
-                "key": "C"
-            },
-            {
-                "date": "2026-04-23",
-                "start_time": "00:25",
-                "end_time": "00:00",
-                "scale": "Major",
+                "date": "2026-04-22",
+                "start_time": "15:00",
+                "end_time": "16:00",
+                "scale": "Blues",
                 "key": "C"
             }
         ]
@@ -41,6 +34,13 @@
                 "end_time": "00:00",
                 "scale": "Major",
                 "key": "C"
+            },
+            {
+                "date": "2026-04-22",
+                "start_time": "16:55",
+                "end_time": "17:00",
+                "scale": "Suspended",
+                "key": "F"
             }
         ]
     }
