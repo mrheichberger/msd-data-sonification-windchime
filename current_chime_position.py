@@ -1,27 +1,35 @@
 from main_backend import update_final_json
 import json
 import time
+import threading
 from chime_mapper import ChimeMapper
 from uart_service import UARTComm
+
+backend_lock = threading.Lock()
+file_lock = threading.Lock()
+uart_lock = threading.Lock()
 
 CURRENT_POSITIONS_PATH = "current_chime_position.json"
 FINAL_PATH = "data/final_notes.json"
 
 
 def load_current_positions():
-    with open(CURRENT_POSITIONS_PATH, "r") as f:
-        return json.load(f)
+    with file_lock:
+        with open(CURRENT_POSITIONS_PATH, "r") as f:
+            return json.load(f)
 
 
 def save_current_positions(positions):
-    with open(CURRENT_POSITIONS_PATH, "w") as f:
-        json.dump(positions, f, indent=4)
+    with file_lock:
+        with open(CURRENT_POSITIONS_PATH, "w") as f:
+            json.dump(positions, f, indent=4)
 
 
 def load_final_notes_snapshot():
     try:
-        with open(FINAL_PATH, "r") as f:
-            return json.load(f)
+        with file_lock:
+            with open(FINAL_PATH, "r") as f:
+                return json.load(f)
     except FileNotFoundError:
         return None
 
@@ -61,100 +69,102 @@ def compute_uart_commands(current_positions, target_positions):
     return commands
 
 def apply_uart_moves():
-    print("[UART] Preparing UART move application")
-    current_positions = load_current_positions()
-    target_positions = get_target_positions()
-    uart_commands = compute_uart_commands(current_positions, target_positions)
-    print(f"[UART] Current positions: {current_positions}")
-    print(f"[UART] Target positions: {target_positions}")
-    print(f"[UART] Computed commands: {uart_commands}")
+    with uart_lock:
+        print("[UART] Preparing UART move application")
+        current_positions = load_current_positions()
+        target_positions = get_target_positions()
+        uart_commands = compute_uart_commands(current_positions, target_positions)
+        print(f"[UART] Current positions: {current_positions}")
+        print(f"[UART] Target positions: {target_positions}")
+        print(f"[UART] Computed commands: {uart_commands}")
 
-    uart = UARTComm()
-    uart.connect()
+        uart = UARTComm()
+        uart.connect()
 
-    try:
-        for i in range(1, 9):
-            key = f"set_{i}"
-            slots_to_move = uart_commands[key]
+        try:
+            for i in range(1, 9):
+                key = f"set_{i}"
+                slots_to_move = uart_commands[key]
 
-            if slots_to_move != 0:
-                try:
-                    started_at = time.time()
-                    print(
-                        f"[UART] {key}: command start motor={i}, requested_slots={slots_to_move}"
-                    )
-                    actual_slots_moved = uart.move_motor_and_get_result(i, slots_to_move)
-                    elapsed = time.time() - started_at
-                    print(
-                        f"[UART] {key}: response received in {elapsed:.2f}s, actual_slots={actual_slots_moved}"
-                    )
-
-                    # 🔍 Check mismatch
-                    if actual_slots_moved != slots_to_move:
+                if slots_to_move != 0:
+                    try:
+                        started_at = time.time()
                         print(
-                            f"[MISMATCH] {key}: expected {slots_to_move}, got {actual_slots_moved}"
+                            f"[UART] {key}: command start motor={i}, requested_slots={slots_to_move}"
                         )
-                    else:
+                        actual_slots_moved = uart.move_motor_and_get_result(i, slots_to_move)
+                        elapsed = time.time() - started_at
                         print(
-                            f"[OK] {key}: moved {actual_slots_moved} slots"
+                            f"[UART] {key}: response received in {elapsed:.2f}s, actual_slots={actual_slots_moved}"
                         )
 
-                except Exception as e:
-                    print(
-                        f"[UART FAIL] {key}: expected {slots_to_move}, no valid response in timeout. Using expected fallback. Error: {e}"
-                    )
-                    actual_slots_moved = slots_to_move
+                        # 🔍 Check mismatch
+                        if actual_slots_moved != slots_to_move:
+                            print(
+                                f"[MISMATCH] {key}: expected {slots_to_move}, got {actual_slots_moved}"
+                            )
+                        else:
+                            print(
+                                f"[OK] {key}: moved {actual_slots_moved} slots"
+                            )
 
-                # Update position from actual UART feedback or expected fallback
-                current = current_positions[key]
-                new_pos = ((current - 1 + actual_slots_moved) % 6) + 1
-                current_positions[key] = new_pos
-            else:
-                print(f"[UART] {key}: already aligned, skipping")
+                    except Exception as e:
+                        print(
+                            f"[UART FAIL] {key}: expected {slots_to_move}, no valid response in timeout. Using expected fallback. Error: {e}"
+                        )
+                        actual_slots_moved = slots_to_move
 
-        save_current_positions(current_positions)
-        print(f"[UART] Saved updated positions: {current_positions}")
+                    # Update position from actual UART feedback or expected fallback
+                    current = current_positions[key]
+                    new_pos = ((current - 1 + actual_slots_moved) % 6) + 1
+                    current_positions[key] = new_pos
+                else:
+                    print(f"[UART] {key}: already aligned, skipping")
 
-    finally:
-        uart.close()
-        print("[UART] UART connection closed")
+            save_current_positions(current_positions)
+            print(f"[UART] Saved updated positions: {current_positions}")
+
+        finally:
+            uart.close()
+            print("[UART] UART connection closed")
 
 
 def run_full_backend_update(control_mode, weather_data=None, selected_scale=None, selected_key=None, reason="unspecified"):
-    print(f"[RUN_FULL_BACKEND_UPDATE] reason={reason}")
-    print(f"[RUN_FULL_BACKEND_UPDATE] control_mode={control_mode}")
-    print(f"[RUN_FULL_BACKEND_UPDATE] selected_scale={selected_scale}, selected_key={selected_key}")
-    print(f"[RUN_FULL_BACKEND_UPDATE] weather_data_present={weather_data is not None}")
+    with backend_lock:
+        print(f"[RUN_FULL_BACKEND_UPDATE] reason={reason}")
+        print(f"[RUN_FULL_BACKEND_UPDATE] control_mode={control_mode}")
+        print(f"[RUN_FULL_BACKEND_UPDATE] selected_scale={selected_scale}, selected_key={selected_key}")
+        print(f"[RUN_FULL_BACKEND_UPDATE] weather_data_present={weather_data is not None}")
 
-    before_notes = load_final_notes_snapshot()
-    print(f"[RUN_FULL_BACKEND_UPDATE] final_notes before update: {before_notes}")
+        before_notes = load_final_notes_snapshot()
+        print(f"[RUN_FULL_BACKEND_UPDATE] final_notes before update: {before_notes}")
 
-    update_final_json(
-        control_mode=control_mode,
-        weather_data=weather_data,
-        selected_scale=selected_scale,
-        selected_key=selected_key
-    )
-    after_notes = load_final_notes_snapshot()
-    print(f"[RUN_FULL_BACKEND_UPDATE] final_notes after update: {after_notes}")
+        update_final_json(
+            control_mode=control_mode,
+            weather_data=weather_data,
+            selected_scale=selected_scale,
+            selected_key=selected_key
+        )
+        after_notes = load_final_notes_snapshot()
+        print(f"[RUN_FULL_BACKEND_UPDATE] final_notes after update: {after_notes}")
 
-    final_notes_changed = before_notes != after_notes
-    print(f"[RUN_FULL_BACKEND_UPDATE] final_notes_changed={final_notes_changed}")
-    positions_changed = positions_need_update()
-    print(f"[RUN_FULL_BACKEND_UPDATE] positions_need_update={positions_changed}")
+        final_notes_changed = before_notes != after_notes
+        print(f"[RUN_FULL_BACKEND_UPDATE] final_notes_changed={final_notes_changed}")
+        positions_changed = positions_need_update()
+        print(f"[RUN_FULL_BACKEND_UPDATE] positions_need_update={positions_changed}")
 
-    if final_notes_changed or positions_changed:
-        if final_notes_changed and positions_changed:
-            print("[RUN_FULL_BACKEND_UPDATE] notes changed and positions differ, applying UART moves")
-        elif final_notes_changed:
-            print("[RUN_FULL_BACKEND_UPDATE] final_notes changed, applying UART moves")
+        if final_notes_changed or positions_changed:
+            if final_notes_changed and positions_changed:
+                print("[RUN_FULL_BACKEND_UPDATE] notes changed and positions differ, applying UART moves")
+            elif final_notes_changed:
+                print("[RUN_FULL_BACKEND_UPDATE] final_notes changed, applying UART moves")
+            else:
+                print("[RUN_FULL_BACKEND_UPDATE] final_notes unchanged but positions differ, applying UART moves")
+            apply_uart_moves()
+            print("[RUN_FULL_BACKEND_UPDATE] UART moves applied")
         else:
-            print("[RUN_FULL_BACKEND_UPDATE] final_notes unchanged but positions differ, applying UART moves")
-        apply_uart_moves()
-        print("[RUN_FULL_BACKEND_UPDATE] UART moves applied")
-    else:
-        print("[RUN_FULL_BACKEND_UPDATE] final_notes unchanged and positions already aligned, skipping UART")
-    
+            print("[RUN_FULL_BACKEND_UPDATE] final_notes unchanged and positions already aligned, skipping UART")
+        
 
 
     '''
