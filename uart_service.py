@@ -17,7 +17,7 @@ import os
 
 
 class UARTComm:
-    def __init__(self, port=None, baudrate=115200, timeout=1):
+    def __init__(self, port=None, baudrate=115200, timeout=10):
         self.port = port
         self.baudrate = baudrate
         self.timeout = timeout
