@@ -82,31 +82,29 @@ class App(ctk.CTk):
                 )
     '''
     def run_backend_update(self, reason="manual"):
-        print(f"[APP] run_backend_update called. reason={reason}, mode={self.current_mode}")
-        try:
-            if self.current_mode == "Weather Mode":
-                run_full_backend_update(
-                    control_mode="Weather Mode",
-                    weather_data=self.weather,
-                    reason=reason
-                )
-            else:
-                run_full_backend_update(
-                    control_mode="User Mode",
-                    selected_scale=self.selected_scale,
-                    selected_key=self.selected_key,
-                    reason=reason
-                )
+        def task():
+            print(f"[APP] run_backend_update called. reason={reason}, mode={self.current_mode}")
+            try:
+                if self.current_mode == "Weather Mode":
+                    run_full_backend_update(
+                        control_mode="Weather Mode",
+                        weather_data=self.weather,
+                        reason=reason
+                    )
+                else:
+                    run_full_backend_update(
+                        control_mode="User Mode",
+                        selected_scale=self.selected_scale,
+                        selected_key=self.selected_key,
+                        reason=reason
+                    )
 
-            print("Backend update complete.")
-            import json
+                print("Backend update complete.")
 
-            with open("data/final_notes.json", "r") as f:
-                notes = json.load(f)
-                print("FINAL NOTES:", notes)
+            except Exception as e:
+                print("Backend update error:", e)
 
-        except Exception as e:
-            print("Backend update error:", e)
+        threading.Thread(target=task, daemon=True).start()
 
     def set_mode(self, mode):
         print(f"[APP] set_mode called with mode={mode}")
