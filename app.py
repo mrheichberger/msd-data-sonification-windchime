@@ -82,7 +82,7 @@ class App(ctk.CTk):
                     selected_key=self.selected_key
                 )
     '''
-    '''
+    
     def run_backend_update(self, reason="manual"):
         print(f"[APP] run_backend_update called. reason={reason}, mode={self.current_mode}")
         try:
@@ -120,7 +120,7 @@ class App(ctk.CTk):
         self.selected_scale = scale
         self.selected_key = key
         self.run_backend_update(reason="user selection changed")
-    '''
+    
     def update_weather(self):
         if self.update_running:
             print("[APP] Skipping update — already running")
