@@ -91,7 +91,11 @@ class UARTComm:
         while time.time() < deadline:
             attempt += 1
             response = self.ser.readline()
-            print(f"[UART] Raw bytes attempt {attempt}: {response!r}")
+            #print(f"[UART] Raw bytes attempt {attempt}: {response!r}")
+
+            if not response:
+                print(f"[UART] No response yet (attempt {attempt})")
+                continue
 
             decoded = response.decode("utf-8", errors="ignore").strip()
             if decoded == "":

@@ -35,6 +35,7 @@ class App(ctk.CTk):
         self.weather = {}
         self.uv = None
         self.last_weather_snapshot = None
+        self.update_running = False
 
         self.weather_service = WeatherService()
 
@@ -121,19 +122,26 @@ class App(ctk.CTk):
         self.run_backend_update(reason="user selection changed")
     '''
     def update_weather(self):
+        if self.update_running:
+            print("[APP] Skipping update — already running")
+            return
+
         print("[APP] update_weather start")
 
         def task():
+            self.update_running = True
             try:
                 from chime_update import chime_update
                 chime_update(self)
                 print("[APP] Weather + backend updated")
             except Exception as e:
                 print("[APP] Update error:", e)
+            finally:
+                self.update_running = False
 
         threading.Thread(target=task, daemon=True).start()
 
-        self.after(1000 * 60 * 10, self.update_weather)
+        self.after(100 * 60 * 10, self.update_weather)
 
 
 if __name__ == "__main__":
