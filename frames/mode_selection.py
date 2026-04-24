@@ -5,6 +5,9 @@ class ModeSelectionFrame(ctk.CTkFrame):
         super().__init__(master)
         self.controller = controller
 
+        self.default_color = "#F76902"
+        self.selected_color = "#BB4E00"
+        
         # make THIS frame expandable
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
