@@ -47,12 +47,16 @@ class WeatherService:
             timeout=10
         ).json()['list'][-1]['main']['aqi']
 
+        icon_code = weather["weather"][0]["icon"]
+        icon_url = f"http://openweathermap.org/img/wn/{icon_code}@4x.png"
+
         weather_data = {
             "current": {
                 "temp": weather["main"]["temp"],
                 "weather": [
                     {
-                        "main": weather["weather"][0]["main"]
+                        "main": weather["weather"][0]["main"],
+                        "icon": icon_url
                     }
                 ]
             },
