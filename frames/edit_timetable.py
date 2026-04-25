@@ -27,8 +27,9 @@ class EditTimetableConfigFrame(ctk.CTkFrame):
         # ---------------- DATE ----------------
         self.date = DateEntry(
             self,
-            width=12,
-            background='darkblue',
+            width=25,
+            font=("Helvetica", 30),
+            background='Orange',
             foreground='white',
             borderwidth=2,
             date_pattern='yyyy-mm-dd'
