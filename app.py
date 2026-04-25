@@ -23,7 +23,7 @@ class App(ctk.CTk):
         self.geometry("800x600")
         self.title("Windchimes")
 
-        #self.attributes("-fullscreen", True)
+        self.attributes("-fullscreen", True)
     
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
