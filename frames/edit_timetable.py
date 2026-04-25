@@ -5,6 +5,10 @@ from tkcalendar import DateEntry
 from chime_update import chime_update
 
 
+ORANGE = "#F76902"
+ORANGE_HOVER = "#BB4E00"
+
+
 class EditTimetableConfigFrame(ctk.CTkFrame):
     def __init__(self, master, controller):
         super().__init__(master)
@@ -13,100 +17,146 @@ class EditTimetableConfigFrame(ctk.CTkFrame):
         self.config = None
         self.index = None
 
-        self.grid_rowconfigure(6, weight=1)  # entries expand
         self.grid_columnconfigure(0, weight=1)
-        
-        # ---------------- HEADER ----------------
-        ctk.CTkLabel(self, text="Edit Configuration",
-                     font=("Helvetica", 20)).grid(row=0, column=0, pady=10)
+        self.grid_rowconfigure(6, weight=1)
 
-        # ---------------- NAME ----------------
-        self.name_entry = ctk.CTkEntry(self, placeholder_text="Name")
-        self.name_entry.grid(row=1, column=0, pady=5, sticky="ew")
-
-        # ---------------- DATE ----------------
-        self.date = DateEntry(
+        # ================= HEADER =================
+        ctk.CTkLabel(
             self,
-            width=25,
+            text="Edit Configuration",
+            font=("Helvetica", 20)
+        ).grid(row=0, column=0, pady=10)
+
+        # ================= NAME =================
+        self.name_entry = ctk.CTkEntry(
+            self,
+            placeholder_text="Name",
+            width=400
+        )
+        self.name_entry.grid(row=1, column=0, pady=5)
+
+        # ================= DATE =================
+        date_wrapper = ctk.CTkFrame(self)
+        date_wrapper.grid(row=2, column=0, pady=10)
+
+        self.date = DateEntry(
+            date_wrapper,
+            width=12,
             font=("Helvetica", 30),
-            background='Orange',
-            foreground='white',
+            background=ORANGE,
+            foreground="white",
             borderwidth=2,
             date_pattern='yyyy-mm-dd'
         )
-        self.date.grid(row=2, column=0, pady=5)
+        self.date.pack(padx=10, pady=5)
 
-        # ---------------- TIME INPUTS ----------------
-        time_frame = ctk.CTkFrame(self)
-        time_frame.grid(row=3, column=0, pady=10, sticky="ew")
+        # ================= TIME =================
+        time_wrapper = ctk.CTkFrame(self)
+        time_wrapper.grid(row=3, column=0, pady=10)
+
+        time_frame = ctk.CTkFrame(time_wrapper)
+        time_frame.pack()
 
         minute_values = [f"{i:02d}" for i in range(0, 60, 5)]
+
+        def styled_dropdown(parent, values, width=80):
+            return ctk.CTkOptionMenu(
+                parent,
+                values=values,
+                width=width,
+                fg_color=ORANGE,
+                button_color=ORANGE,
+                button_hover_color=ORANGE_HOVER,
+                dropdown_fg_color="#2b2b2b",   # popup background
+                dropdown_hover_color=ORANGE_HOVER,
+                text_color="white"
+            )
 
         # START
         ctk.CTkLabel(time_frame, text="Start").grid(row=0, column=0, padx=5)
 
-        self.start_hour = ctk.CTkOptionMenu(time_frame,
-                                            values=[str(i) for i in range(1, 13)])
-        self.start_hour.grid(row=0, column=1)
+        self.start_hour = styled_dropdown(time_frame, [str(i) for i in range(1, 13)])
+        self.start_hour.grid(row=0, column=1, padx=5)
 
-        self.start_minute = ctk.CTkOptionMenu(time_frame,
-                                              values=minute_values)
-        self.start_minute.grid(row=0, column=2)
+        self.start_minute = styled_dropdown(time_frame, minute_values)
+        self.start_minute.grid(row=0, column=2, padx=5)
 
-        self.start_ampm = ctk.CTkOptionMenu(time_frame,
-                                            values=["AM", "PM"])
-        self.start_ampm.grid(row=0, column=3)
+        self.start_ampm = styled_dropdown(time_frame, ["AM", "PM"])
+        self.start_ampm.grid(row=0, column=3, padx=5)
 
         # END
         ctk.CTkLabel(time_frame, text="End").grid(row=1, column=0, padx=5)
 
-        self.end_hour = ctk.CTkOptionMenu(time_frame,
-                                          values=[str(i) for i in range(1, 13)])
-        self.end_hour.grid(row=1, column=1)
+        self.end_hour = styled_dropdown(time_frame, [str(i) for i in range(1, 13)])
+        self.end_hour.grid(row=1, column=1, padx=5)
 
-        self.end_minute = ctk.CTkOptionMenu(time_frame,
-                                            values=minute_values)
-        self.end_minute.grid(row=1, column=2)
+        self.end_minute = styled_dropdown(time_frame, minute_values)
+        self.end_minute.grid(row=1, column=2, padx=5)
 
-        self.end_ampm = ctk.CTkOptionMenu(time_frame,
-                                          values=["AM", "PM"])
-        self.end_ampm.grid(row=1, column=3)
+        self.end_ampm = styled_dropdown(time_frame, ["AM", "PM"])
+        self.end_ampm.grid(row=1, column=3, padx=5)
 
-        # ---------------- SCALE + KEY ----------------
-        sk_frame = ctk.CTkFrame(self)
-        sk_frame.grid(row=4, column=0, pady=10)
+        # ================= SCALE / KEY =================
+        sk_wrapper = ctk.CTkFrame(self)
+        sk_wrapper.grid(row=4, column=0, pady=10)
 
-        self.scale = ctk.CTkOptionMenu(
-            sk_frame, values=["Major", "Minor", "Blues", "Suspended", "Pentatonic", "Custom"]
+        sk_frame = ctk.CTkFrame(sk_wrapper)
+        sk_frame.pack()
+
+        self.scale = styled_dropdown(
+            sk_frame,
+            ["Major", "Minor", "Blues", "Suspended", "Pentatonic", "Custom"],
+            width=160
         )
-        self.scale.pack(side="left", padx=5)
+        self.scale.pack(side="left", padx=10)
 
-        self.key = ctk.CTkOptionMenu(
-            sk_frame, values=["C", "D", "E", "F"]
+        self.key = styled_dropdown(
+            sk_frame,
+            ["C", "D", "E", "F"],
+            width=100
         )
-        self.key.pack(side="left", padx=5)
+        self.key.pack(side="left", padx=10)
 
-        # ---------------- ADD BUTTON ----------------
-        ctk.CTkButton(self, text="Add Entry",
-                      command=self.add_entry).grid(row=5, column=0, pady=10)
+        # ================= ADD BUTTON =================
+        ctk.CTkButton(
+            self,
+            text="Add Entry",
+            width=200,
+            fg_color=ORANGE,
+            hover_color=ORANGE_HOVER,
+            command=self.add_entry
+        ).grid(row=5, column=0, pady=10)
 
-        # ---------------- ENTRY LIST ----------------
-        self.entries_frame = ctk.CTkScrollableFrame(self)
-        self.entries_frame.grid(row=6, column=0, sticky="nsew", padx=10, pady=10)
+        # ================= ENTRY LIST =================
+        self.entries_frame = ctk.CTkScrollableFrame(self, width=600)
+        self.entries_frame.grid(row=6, column=0, sticky="nsew", padx=20, pady=10)
 
-        # ---------------- BUTTON ROW ----------------
-        button_row = ctk.CTkFrame(self)
-        button_row.grid(row=7, column=0, pady=10, sticky="ew")
-        button_row.background_color="transparent"
+        # ================= BUTTONS =================
+        button_wrapper = ctk.CTkFrame(self)
+        button_wrapper.grid(row=7, column=0, pady=10)
 
-        ctk.CTkButton(button_row, text="Save",
-                      command=self.save).pack(side="left", padx=10)
+        button_row = ctk.CTkFrame(button_wrapper)
+        button_row.pack()
 
-        ctk.CTkButton(button_row, text="Back",
-                      command=lambda: controller.show_frame("TimetableConfigFrame")
-                      ).pack(side="left", padx=10)
+        ctk.CTkButton(
+            button_row,
+            text="Save",
+            width=120,
+            fg_color=ORANGE,
+            hover_color=ORANGE_HOVER,
+            command=self.save
+        ).pack(side="left", padx=10)
 
-        # DEFAULTS
+        ctk.CTkButton(
+            button_row,
+            text="Back",
+            width=120,
+            fg_color=ORANGE,
+            hover_color=ORANGE_HOVER,
+            command=lambda: controller.show_frame("TimetableConfigFrame")
+        ).pack(side="left", padx=10)
+
+        # ================= DEFAULTS =================
         self.start_hour.set("12")
         self.start_minute.set("00")
         self.start_ampm.set("AM")
@@ -116,7 +166,7 @@ class EditTimetableConfigFrame(ctk.CTkFrame):
         self.end_ampm.set("AM")
 
     # =========================
-    # SET CONFIG
+    # LOGIC (UNCHANGED)
     # =========================
     def set_configuration(self, index, config, is_new):
         self.index = index
@@ -127,9 +177,6 @@ class EditTimetableConfigFrame(ctk.CTkFrame):
 
         self.refresh_entries()
 
-    # =========================
-    # TIME CONVERSION
-    # =========================
     def convert_to_24h(self, hour, minute, ampm):
         hour = int(hour)
         minute = int(minute)
@@ -147,9 +194,6 @@ class EditTimetableConfigFrame(ctk.CTkFrame):
         h = h % 12 or 12
         return f"{h}:{m:02d} {ampm}"
 
-    # =========================
-    # ADD ENTRY
-    # =========================
     def add_entry(self):
         try:
             date_val = self.date.get()
@@ -183,16 +227,10 @@ class EditTimetableConfigFrame(ctk.CTkFrame):
         self.config["scales"].append(entry)
         self.refresh_entries()
 
-    # =========================
-    # DELETE ENTRY
-    # =========================
     def delete_entry(self, index):
         del self.config["scales"][index]
         self.refresh_entries()
 
-    # =========================
-    # DISPLAY ENTRIES
-    # =========================
     def refresh_entries(self):
         for w in self.entries_frame.winfo_children():
             w.destroy()
@@ -204,10 +242,7 @@ class EditTimetableConfigFrame(ctk.CTkFrame):
             start_12 = self.to_12h(e["start_time"])
             end_12 = self.to_12h(e["end_time"])
 
-            txt = (
-                f"{e['date']} | {start_12} → {end_12} | "
-                f"{e['scale']} {e['key']}"
-            )
+            txt = f"{e['date']} | {start_12} → {end_12} | {e['scale']} {e['key']}"
 
             ctk.CTkLabel(frame, text=txt).pack(side="left", padx=5)
 
@@ -220,9 +255,6 @@ class EditTimetableConfigFrame(ctk.CTkFrame):
                 command=lambda i=i: self.delete_entry(i)
             ).pack(side="right", padx=5)
 
-    # =========================
-    # SAVE
-    # =========================
     def save(self):
         print("[EDIT_TIMETABLE] Saving timetable configuration")
         self.config["name"] = self.name_entry.get()
