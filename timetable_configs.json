@@ -1,47 +1,6 @@
 [
     {
         "name": "Config 1",
-        "scales": [
-            {
-                "date": "2026-04-22",
-                "start_time": "16:35",
-                "end_time": "16:40",
-                "scale": "Major",
-                "key": "C"
-            },
-            {
-                "date": "2026-04-22",
-                "start_time": "15:00",
-                "end_time": "16:00",
-                "scale": "Blues",
-                "key": "C"
-            }
-        ]
-    },
-    {
-        "name": "Config 2",
-        "scales": [
-            {
-                "date": "2026-04-17",
-                "start_time": "17:00",
-                "end_time": "18:30",
-                "scale": "Major",
-                "key": "C"
-            },
-            {
-                "date": "2026-04-22",
-                "start_time": "00:00",
-                "end_time": "00:00",
-                "scale": "Major",
-                "key": "C"
-            },
-            {
-                "date": "2026-04-22",
-                "start_time": "16:55",
-                "end_time": "17:00",
-                "scale": "Suspended",
-                "key": "F"
-            }
-        ]
+        "scales": []
     }
 ]
