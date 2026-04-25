@@ -8,10 +8,22 @@ class ModeSelectionFrame(ctk.CTkFrame):
         self.default_color = "#F76902"
         self.selected_color = "#BB4E00"
         
+        self.button_style = {
+            "width": 200,
+            "height": 50,
+            "corner_radius": 10,
+            "font": ("Helvetica", 16),
+            "fg_color": "#F76902",
+            "hover_color": "#BB4E00",
+            "text_color": "#FFFFFF"
+        }
+        
         # make THIS frame expandable
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
+        self.selected_mode = self.controller.current_mode  # default to current mode for better UX
+        
         container = ctk.CTkFrame(self)
         container.grid(row=0, column=0)  # sits in the center because of weights
 
@@ -29,8 +41,7 @@ class ModeSelectionFrame(ctk.CTkFrame):
         self.user_btn = ctk.CTkButton(
             container,
             text="User Mode",
-            width=200,
-            height=50,
+            **self.button_style,
             command=lambda: self.select_mode("User Mode")
         )
         self.user_btn.grid(row=1, column=0, pady=10)
@@ -38,8 +49,7 @@ class ModeSelectionFrame(ctk.CTkFrame):
         self.weather_btn = ctk.CTkButton(
             container,
             text="Weather Mode",
-            width=200,
-            height=50,
+            **self.button_style,
             command=lambda: self.select_mode("Weather Mode")
         )
         self.weather_btn.grid(row=1, column=1, pady=10)
@@ -48,9 +58,8 @@ class ModeSelectionFrame(ctk.CTkFrame):
         ctk.CTkButton(
             container,
             text="Confirm",
-            width=200,
-            height=50,
-            command=self.confirm
+            **self.button_style,
+            command=self.confirm,
         ).grid(row=2, column=0, pady=(30, 20), columnspan=2)
 
     def select_mode(self, mode):
