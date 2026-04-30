@@ -3,6 +3,7 @@ import customtkinter as ctk
 import threading
 
 from frames.home import HomeFrame
+from frames.rotate_frame import RotateFrame
 from frames.timetable import TimetableConfigFrame
 from frames.edit_timetable import EditTimetableConfigFrame
 from frames.preset import PresetConfigFrame
@@ -52,7 +53,8 @@ class App(ctk.CTk):
             ModeSelectionFrame,
             MonitorFrame,
             ChimeConfigFrame,
-            WeatherMoodFrame
+            WeatherMoodFrame,
+            RotateFrame
         ):
             frame = Frame(self, controller=self)
             self.frames[Frame.__name__] = frame
