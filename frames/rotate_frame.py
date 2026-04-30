@@ -64,6 +64,18 @@ class RotateFrame(ctk.CTkFrame):
                 sticky="nsew"
             )
 
+
+        # =========================
+        # BACK BUTTON
+        # =========================
+        self.back_button = ctk.CTkButton(
+            self,
+            text="Back",
+            command=lambda: controller.show_frame("HomeFrame"),
+            **button_style
+        )
+        self.back_button.grid(row=5, column=0, padx=10, pady=10, columnspan=2, sticky="nesw")
+
     # =========================
     # ROTATE FUNCTION
     # =========================
