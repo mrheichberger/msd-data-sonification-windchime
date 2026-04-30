@@ -10,5 +10,7 @@
 void uart_comm_init(void);
 bool uart_comm_read_int(int32_t *value);
 void uart_comm_send_int(int32_t value);
+bool uart_comm_read_char(char *out);
+
 
 #endif

@@ -7,8 +7,13 @@
     "F4": false,
     "F#4": true,
     "G4": false,
+<<<<<<< Updated upstream
     "G#4": true,
     "A4": false,
+=======
+    "G#4": false,
+    "A4": true,
+>>>>>>> Stashed changes
     "A#4": false,
     "B4": true,
     "C5": false,

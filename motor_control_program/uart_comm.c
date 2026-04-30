@@ -34,6 +34,18 @@ void uart_comm_init(void) {
     gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
 }
 
+bool uart_comm_read_char(char *out)
+{
+    if (!uart_is_readable(UART_ID)) {
+        return false;
+    }
+
+    *out = uart_getc(UART_ID);
+    return true;
+}
+
+
+
 bool uart_comm_read_int(int32_t *value) {
     while (uart_is_readable(UART_ID)) {
         char c = uart_getc(UART_ID);
