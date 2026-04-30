@@ -143,7 +143,7 @@ class App(ctk.CTk):
 
         threading.Thread(target=task, daemon=True).start()
 
-        self.after(100 * 60 * 10, self.update_weather)
+        self.after(500 * 60 * 10, self.update_weather)
 
 
 if __name__ == "__main__":
