@@ -120,7 +120,7 @@ int32_t move_geneva_slots(motor_driver_t *m, encoder_t *enc, int32_t requested_s
     int32_t start_counts = encoder_get_position(enc);
     uint32_t start_edges = encoder_get_quad_edge_count(enc);
     int32_t start_slot = encoder_get_slot(enc, COUNTS_PER_SLOT, SLOT_THRESHOLD_COUNTS);
-    int32_t target_slot = start_slot + requested_slots;
+    int32_t target_slot = requested_slots;
 
     printf("move_geneva_slots() START\n");
     printf("  start_counts    = %ld\n", (long)start_counts);
@@ -139,11 +139,15 @@ int32_t move_geneva_slots(motor_driver_t *m, encoder_t *enc, int32_t requested_s
         int32_t current_slot = encoder_get_slot(enc, COUNTS_PER_SLOT, SLOT_THRESHOLD_COUNTS);
 
         if (print_counter % 500 == 0) {
-            printf("  loop: current_counts=%ld current_slot=%ld target_slot=%ld\n",
-                   (long)current_counts,
-                   (long)current_slot,
-                   (long)target_slot);
-        }
+
+    int32_t debug_start_slot = encoder_get_slot(enc, COUNTS_PER_SLOT, SLOT_THRESHOLD_COUNTS);
+
+    printf("  loop: current_counts=%ld current_slot=%ld target_slot=%ld start_slot=%ld\n",
+           (long)current_counts,
+           (long)current_slot,
+           (long)target_slot,
+           (long)debug_start_slot);
+}
 
         if (current_slot >= target_slot) {
             printf("  target reached\n");
