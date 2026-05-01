@@ -21,25 +21,21 @@
 #define UART_TOKEN_MAX_LEN 16
 #define CMD_QUEUE_SIZE 16
 
-
 typedef enum {
     WAIT_FIRST_TOKEN,
     WAIT_A_MOTOR,
     WAIT_SLOT_COUNT
 } uart_state_t;
 
-
 typedef struct {
     int32_t motor_num;
     int32_t slots;
 } motor_cmd_t;
 
-
 static motor_cmd_t cmd_queue[CMD_QUEUE_SIZE];
 static int q_head = 0;
 static int q_tail = 0;
 static int q_count = 0;
-
 
 bool queue_push(int32_t motor_num, int32_t slots)
 {
@@ -56,7 +52,6 @@ bool queue_push(int32_t motor_num, int32_t slots)
     return true;
 }
 
-
 bool queue_pop(motor_cmd_t *cmd)
 {
     if (q_count <= 0) {
@@ -71,9 +66,16 @@ bool queue_pop(motor_cmd_t *cmd)
     return true;
 }
 
+void queue_clear(void)
+{
+    q_head = 0;
+    q_tail = 0;
+    q_count = 0;
+}
 
 // Reads UART characters until newline, then returns one complete token.
-// Example tokens: "a", "3", "2"
+// Special case: if it sees 'c' or 'C', it immediately clears the partial token
+// and returns "c" as a command.
 bool uart_read_token(char *out, int max_len)
 {
     static char buffer[UART_TOKEN_MAX_LEN];
@@ -85,6 +87,12 @@ bool uart_read_token(char *out, int max_len)
 
         if (c == '\r') {
             continue;
+        }
+
+        if (c == 'c' || c == 'C') {
+            index = 0;
+            strcpy(out, "c");
+            return true;
         }
 
         if (c == '\n') {
@@ -109,7 +117,6 @@ bool uart_read_token(char *out, int max_len)
 
     return false;
 }
-
 
 int32_t move_geneva_slots(motor_driver_t *m, encoder_t *enc, int32_t requested_slots)
 {
@@ -139,15 +146,14 @@ int32_t move_geneva_slots(motor_driver_t *m, encoder_t *enc, int32_t requested_s
         int32_t current_slot = encoder_get_slot(enc, COUNTS_PER_SLOT, SLOT_THRESHOLD_COUNTS);
 
         if (print_counter % 500 == 0) {
+            int32_t debug_start_slot = encoder_get_slot(enc, COUNTS_PER_SLOT, SLOT_THRESHOLD_COUNTS);
 
-    int32_t debug_start_slot = encoder_get_slot(enc, COUNTS_PER_SLOT, SLOT_THRESHOLD_COUNTS);
-
-    printf("  loop: current_counts=%ld current_slot=%ld target_slot=%ld start_slot=%ld\n",
-           (long)current_counts,
-           (long)current_slot,
-           (long)target_slot,
-           (long)debug_start_slot);
-}
+            printf("  loop: current_counts=%ld current_slot=%ld target_slot=%ld start_slot=%ld\n",
+                   (long)current_counts,
+                   (long)current_slot,
+                   (long)target_slot,
+                   (long)debug_start_slot);
+        }
 
         if (current_slot >= target_slot) {
             printf("  target reached\n");
@@ -180,7 +186,6 @@ int32_t move_geneva_slots(motor_driver_t *m, encoder_t *enc, int32_t requested_s
     return actual_slots_moved;
 }
 
-
 // ---------------- motors ----------------
 motor_driver_t m1 = { .pwm_pin = 0, .wrap = 10000, .clkdiv = 4.0f };
 motor_driver_t m2 = { .pwm_pin = 1, .wrap = 10000, .clkdiv = 4.0f };
@@ -190,7 +195,6 @@ motor_driver_t m5 = { .pwm_pin = 4, .wrap = 10000, .clkdiv = 4.0f };
 motor_driver_t m6 = { .pwm_pin = 5, .wrap = 10000, .clkdiv = 4.0f };
 motor_driver_t m7 = { .pwm_pin = 6, .wrap = 10000, .clkdiv = 4.0f };
 motor_driver_t m8 = { .pwm_pin = 7, .wrap = 10000, .clkdiv = 4.0f };
-
 
 // ---------------- encoders ----------------
 encoder_t enc1 = { .pin_a = 8,  .pin_b = 9,  .use_pullups = true };
@@ -202,7 +206,6 @@ encoder_t enc6 = { .pin_a = 20, .pin_b = 21, .use_pullups = true };
 encoder_t enc7 = { .pin_a = 22, .pin_b = 26, .use_pullups = true };
 encoder_t enc8 = { .pin_a = 27, .pin_b = 28, .use_pullups = true };
 
-
 motor_driver_t* motors[8] = {
     &m1, &m2, &m3, &m4, &m5, &m6, &m7, &m8
 };
@@ -210,7 +213,6 @@ motor_driver_t* motors[8] = {
 encoder_t* encoders[8] = {
     &enc1, &enc2, &enc3, &enc4, &enc5, &enc6, &enc7, &enc8
 };
-
 
 int main()
 {
@@ -256,7 +258,19 @@ int main()
 
             printf("UART token received: %s\n", token);
 
-            if (state == WAIT_FIRST_TOKEN) {
+            if (strcmp(token, "c") == 0 || strcmp(token, "C") == 0) {
+                printf("CLEAR command received. Clearing queue and resetting UART state.\n");
+
+                queue_clear();
+
+                requested_motor = 0;
+                requested_slots = 0;
+                state = WAIT_FIRST_TOKEN;
+
+                uart_comm_send_int(-99);
+            }
+
+            else if (state == WAIT_FIRST_TOKEN) {
 
                 if (strcmp(token, "a") == 0 || strcmp(token, "A") == 0) {
                     printf("Command A received. Next token should be motor number.\n");
@@ -303,7 +317,6 @@ int main()
                 state = WAIT_FIRST_TOKEN;
             }
         }
-
 
         // ----------------------------------------------------
         // 2. Process exactly ONE queued command at a time
@@ -353,4 +366,4 @@ int main()
 
         sleep_ms(2);
     }
-} 
+}
