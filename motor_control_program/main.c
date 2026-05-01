@@ -1,6 +1,7 @@
 #include "motor_driver.h"
 #include "encoder.h"
 #include <pico/stdlib.h>
+#include <pico/time.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -15,11 +16,10 @@
 
 #define COUNTS_PER_SLOT QUADRATURE_COUNTS_PER_GENEVA_SLOT
 #define SLOT_THRESHOLD_COUNTS 0
-
-// wait up to 1 full minute for movement before timing out
 #define MOVE_TIMEOUT_MS 60000
 
 #define UART_TOKEN_MAX_LEN 16
+#define CMD_QUEUE_SIZE 16
 
 
 typedef enum {
@@ -27,6 +27,49 @@ typedef enum {
     WAIT_A_MOTOR,
     WAIT_SLOT_COUNT
 } uart_state_t;
+
+
+typedef struct {
+    int32_t motor_num;
+    int32_t slots;
+} motor_cmd_t;
+
+
+static motor_cmd_t cmd_queue[CMD_QUEUE_SIZE];
+static int q_head = 0;
+static int q_tail = 0;
+static int q_count = 0;
+
+
+bool queue_push(int32_t motor_num, int32_t slots)
+{
+    if (q_count >= CMD_QUEUE_SIZE) {
+        return false;
+    }
+
+    cmd_queue[q_tail].motor_num = motor_num;
+    cmd_queue[q_tail].slots = slots;
+
+    q_tail = (q_tail + 1) % CMD_QUEUE_SIZE;
+    q_count++;
+
+    return true;
+}
+
+
+bool queue_pop(motor_cmd_t *cmd)
+{
+    if (q_count <= 0) {
+        return false;
+    }
+
+    *cmd = cmd_queue[q_head];
+
+    q_head = (q_head + 1) % CMD_QUEUE_SIZE;
+    q_count--;
+
+    return true;
+}
 
 
 // Reads UART characters until newline, then returns one complete token.
@@ -77,7 +120,7 @@ int32_t move_geneva_slots(motor_driver_t *m, encoder_t *enc, int32_t requested_s
     int32_t start_counts = encoder_get_position(enc);
     uint32_t start_edges = encoder_get_quad_edge_count(enc);
     int32_t start_slot = encoder_get_slot(enc, COUNTS_PER_SLOT, SLOT_THRESHOLD_COUNTS);
-    int32_t target_slot = start_slot + requested_slots;
+    int32_t target_slot = requested_slots;
 
     printf("move_geneva_slots() START\n");
     printf("  start_counts    = %ld\n", (long)start_counts);
@@ -88,31 +131,36 @@ int32_t move_geneva_slots(motor_driver_t *m, encoder_t *enc, int32_t requested_s
 
     motor_forward_full(m);
 
-    int timeout = 0;
+    uint32_t start_time = to_ms_since_boot(get_absolute_time());
+    uint32_t print_counter = 0;
 
     while (1) {
         int32_t current_counts = encoder_get_position(enc);
         int32_t current_slot = encoder_get_slot(enc, COUNTS_PER_SLOT, SLOT_THRESHOLD_COUNTS);
 
-        if (timeout % 500 == 0) {
-            printf("  loop: current_counts=%ld current_slot=%ld target_slot=%ld\n",
-                   (long)current_counts,
-                   (long)current_slot,
-                   (long)target_slot);
-        }
+        if (print_counter % 500 == 0) {
+
+    int32_t debug_start_slot = encoder_get_slot(enc, COUNTS_PER_SLOT, SLOT_THRESHOLD_COUNTS);
+
+    printf("  loop: current_counts=%ld current_slot=%ld target_slot=%ld start_slot=%ld\n",
+           (long)current_counts,
+           (long)current_slot,
+           (long)target_slot,
+           (long)debug_start_slot);
+}
 
         if (current_slot >= target_slot) {
             printf("  target reached\n");
             break;
         }
 
-        sleep_us(100);
-        timeout++;
-
-        if (timeout > MOVE_TIMEOUT_MS) {
+        if (to_ms_since_boot(get_absolute_time()) - start_time > MOVE_TIMEOUT_MS) {
             printf("  TIMEOUT in encoder loop\n");
             break;
         }
+
+        print_counter++;
+        sleep_us(100);
     }
 
     motor_stop(m);
@@ -130,12 +178,6 @@ int32_t move_geneva_slots(motor_driver_t *m, encoder_t *enc, int32_t requested_s
     printf("  actual_slots_moved = %ld\n", (long)actual_slots_moved);
 
     return actual_slots_moved;
-}
-
-
-int32_t move_one_geneva_slot(motor_driver_t *m, encoder_t *enc)
-{
-    return move_geneva_slots(m, enc, 1);
 }
 
 
@@ -161,7 +203,6 @@ encoder_t enc7 = { .pin_a = 22, .pin_b = 26, .use_pullups = true };
 encoder_t enc8 = { .pin_a = 27, .pin_b = 28, .use_pullups = true };
 
 
-// ---------------- arrays ----------------
 motor_driver_t* motors[8] = {
     &m1, &m2, &m3, &m4, &m5, &m6, &m7, &m8
 };
@@ -204,9 +245,14 @@ int main()
     int32_t requested_motor = 0;
     int32_t requested_slots = 0;
 
+    bool motor_busy = false;
+
     while (1) {
 
-        if (uart_read_token(token, UART_TOKEN_MAX_LEN)) {
+        // ----------------------------------------------------
+        // 1. Only read UART when motor is NOT busy
+        // ----------------------------------------------------
+        if (!motor_busy && uart_read_token(token, UART_TOKEN_MAX_LEN)) {
 
             printf("UART token received: %s\n", token);
 
@@ -226,27 +272,12 @@ int main()
 
                 requested_motor = atoi(token);
 
-                if (requested_motor >= 1 && requested_motor <= 8) {
-
-                    int index = requested_motor - 1;
-
-                    printf("Moving motor %ld by ONE slot\n", (long)requested_motor);
-
-                    int32_t actual_slots_moved = move_one_geneva_slot(
-                        motors[index],
-                        encoders[index]
-                    );
-
-                    printf("ABOUT TO SEND UART RESPONSE: %ld\n",
-                        (long)actual_slots_moved);
-
-                        uart_comm_send_int(actual_slots_moved);
-
-                    printf("UART RESPONSE SENT\n");
-
+                if (queue_push(requested_motor, 1)) {
+                    printf("Queued one-slot command: motor=%ld slots=1\n",
+                           (long)requested_motor);
                 } else {
-                    printf("Invalid motor number: %ld\n", (long)requested_motor);
-                    uart_comm_send_int(-1);
+                    printf("Command queue full\n");
+                    uart_comm_send_int(-88);
                 }
 
                 requested_motor = 0;
@@ -258,30 +289,13 @@ int main()
 
                 requested_slots = atoi(token);
 
-                if (requested_motor >= 1 && requested_motor <= 8) {
-
-                    int index = requested_motor - 1;
-
-                    printf("Moving motor %ld by %ld slots\n",
+                if (queue_push(requested_motor, requested_slots)) {
+                    printf("Queued normal command: motor=%ld slots=%ld\n",
                            (long)requested_motor,
                            (long)requested_slots);
-
-                    int32_t actual_slots_moved = move_geneva_slots(
-                        motors[index],
-                        encoders[index],
-                        requested_slots
-                    );
-
-                    printf("ABOUT TO SEND UART RESPONSE: %ld\n",
-                  (long)actual_slots_moved);
-
-                uart_comm_send_int(actual_slots_moved);
-
-                printf("UART RESPONSE SENT\n");
-
                 } else {
-                    printf("Invalid motor number: %ld\n", (long)requested_motor);
-                    uart_comm_send_int(-1);
+                    printf("Command queue full\n");
+                    uart_comm_send_int(-88);
                 }
 
                 requested_motor = 0;
@@ -290,6 +304,53 @@ int main()
             }
         }
 
-        sleep_ms(5);
+
+        // ----------------------------------------------------
+        // 2. Process exactly ONE queued command at a time
+        // ----------------------------------------------------
+        if (!motor_busy) {
+
+            motor_cmd_t cmd;
+
+            if (queue_pop(&cmd)) {
+
+                motor_busy = true;
+
+                printf("Processing command: motor=%ld slots=%ld\n",
+                       (long)cmd.motor_num,
+                       (long)cmd.slots);
+
+                int32_t actual_slots_moved = -1;
+
+                if (cmd.motor_num >= 1 && cmd.motor_num <= 8 && cmd.slots > 0) {
+
+                    int index = cmd.motor_num - 1;
+
+                    actual_slots_moved = move_geneva_slots(
+                        motors[index],
+                        encoders[index],
+                        cmd.slots
+                    );
+
+                } else {
+                    printf("Invalid command: motor=%ld slots=%ld\n",
+                           (long)cmd.motor_num,
+                           (long)cmd.slots);
+
+                    actual_slots_moved = -1;
+                }
+
+                printf("ABOUT TO SEND UART RESPONSE: %ld\n",
+                       (long)actual_slots_moved);
+
+                uart_comm_send_int(actual_slots_moved);
+
+                printf("UART RESPONSE SENT\n");
+
+                motor_busy = false;
+            }
+        }
+
+        sleep_ms(2);
     }
-}
+} 
