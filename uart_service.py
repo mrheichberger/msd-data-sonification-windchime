@@ -119,6 +119,26 @@ class UARTComm:
         if self.ser is not None and self.ser.is_open:
             self.ser.close()
 
+#--------------------uart send c to clear buffer -------------------------
+    def send_clear_command(self):
+        if self.ser is None:
+            raise RuntimeError("UART not connected")
+
+        print("[PI → PICO] Sending CLEAR command (c)")
+
+        # Clears Pi-side leftovers, not Pico-side
+        self.ser.reset_input_buffer()
+        self.ser.reset_output_buffer()
+
+        # Clears Pico-side buffer/state
+        self.ser.write(b"c\n")
+
+        try:
+            response = self.read_response()
+            print(f"[UART] Clear response: {response}")
+        except Exception:
+            print("[UART] No clear response received")
+
 
 if __name__ == "__main__":
     uart = UARTComm()

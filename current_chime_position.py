@@ -71,6 +71,7 @@ def apply_uart_moves():
 
     uart = UARTComm()
     uart.connect()
+    uart.send_clear_command()
 
     try:
         for i in range(1, 9):
