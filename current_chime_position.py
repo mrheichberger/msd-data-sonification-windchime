@@ -71,9 +71,9 @@ def apply_uart_moves():
 
     uart = UARTComm()
     uart.connect()
-    uart.send_clear_command()
 
     try:
+        uart.send_clear_command()
         for i in range(1, 9):
             key = f"set_{i}"
             slots_to_move = uart_commands[key]
