@@ -1,240 +1,177 @@
 # MSD Data Sonification Windchime
 
-## Overview
+Data-driven windchime system that maps musical note selections (user mode) or weather-driven mappings (weather mode) into physical Geneva-slot motor positions.
 
-This project is a data-driven windchime system that converts either user-selected musical settings or live weather conditions into physical chime configurations.
+## What This Project Does
 
-The Python backend is responsible for:
+- Selects a scale/key from user input, timetable, or weather mapping.
+- Writes active notes into `data/final_notes.json`.
+- Maps notes to target Geneva positions for 8 chime sets.
+- Compares target positions to `current_chime_position.json`.
+- Sends UART motor commands from Raspberry Pi to Pico.
+- Reads back actual moved slots from the Pico.
+- Updates saved current positions.
 
-- Selecting the active musical scale and key  
-- Updating the active note-state JSON  
-- Mapping note states to Geneva mechanism target positions  
-- Calculating how far each chime set must rotate  
-- Sending motor movement commands over UART from the Raspberry Pi to the Raspberry Pi Pico  
-- Storing the current physical position of each chime set  
+## Main Components
 
-The system supports two control modes:
+- `app.py`: app/runtime orchestration.
+- `main_backend.py`: mode selection and end-to-end backend update logic.
+- `scale_manager.py`: applies selected scale/key into active notes.
+- `chime_mapper.py`: converts note-state to 8 target set positions.
+- `current_chime_position.py`: computes required moves and applies UART updates.
+- `uart_service.py`: Pi-side UART transport and response parsing.
+- `weather_mode_mapper.py`: maps weather conditions to scale/key.
+- `motor_control_program/`: Pico firmware for UART command parsing and motor execution.
 
-- **User Mode**: The user selects a scale/key or uses a scheduled timetable entry  
-- **Weather Mode**: Live weather data from the API is mapped to a scale/key pair  
+## Control Modes
 
----
+- `User Mode`: GUI selection or active timetable config controls scale/key.
+- `Weather Mode`: weather API condition/temperature selects scale/key.
 
-## Repository Structure
+## Runtime Flow
 
-```text
-.
-├── app.py
-├── main_backend.py
-├── scale_manager.py
-├── chime_mapper.py
-├── current_chime_position.py
-├── uart_service.py
-├── weather_mode_mapper.py
-├── time_helper.py
-├── test_full_pipeline.py
-├── test_weather_mapper.py
-├── timetable_configs.json
-├── current_chime_position.json
-├── README.md
-├── data/
-│   ├── chime_states.json
-│   ├── final_notes.json
-│   └── weather_mood_config.json
-├── frames/
-├── services/
-└── motor_control_program/
----
+1. Determine active mode.
+2. Resolve scale/key.
+3. Update `data/final_notes.json`.
+4. Map notes to target positions.
+5. Compare with `current_chime_position.json`.
+6. Send per-motor UART command (`motor`, `slots`).
+7. Receive actual slots moved from Pico.
+8. Persist updated positions.
+
+## UART Protocol
+
+### Standard Move Command
+
+Pi sends two newline-delimited integers:
+
+1. `motor_number` (1-8)
+2. `requested_slots` (>0)
+
+Pico returns one newline-delimited integer:
+
+- `actual_slots_moved`
+
+### Special Commands / Error Codes
+
+- `c` (Pi -> Pico): clear command queue + parser state.
+- `0` (Pico -> Pi): clear acknowledged.
+- `-77` (Pico -> Pi): invalid token/protocol parse error.
+- `-88` (Pico -> Pi): command queue full.
+
+## Pico Motor Control Behavior (Current)
+
+The firmware is encoder-informed slot control (not PID):
+
+- Move command is treated as relative movement: "move N slots from current position."
+- Loop tracks moved slots via encoder (`current_slot - start_slot`).
+- Stops when moved slots reach requested slots.
+- Includes guard timeouts:
+  - `MOVE_TIMEOUT_MS` (overall move timeout)
+  - `FIRST_EDGE_TIMEOUT_MS` (max wait before first encoder motion)
+  - `NO_MOTION_TIMEOUT_MS` (max no-motion gap after movement starts)
+- Includes post-stop settle window:
+  - `SETTLE_TIME_MS`, `SETTLE_TIMEOUT_MS`
+- Slowdown near target is currently disabled for no-load testing:
+  - `SLOWDOWN_SLOTS = 0`
+
+## Position Data Files
+
+- `data/chime_states.json`: scale definitions.
+- `data/final_notes.json`: active note-state.
+- `current_chime_position.json`: last known physical set positions.
+- `timetable_configs.json`: scheduled user mode selections.
+
+## Build / Flash (Pico Firmware)
+
+From project root:
+
+```bash
+cd motor_control_program
+cd build
+ninja
 ```
-## Backend Flow
 
-1. Determine whether the system is in user mode or weather mode  
-2. Select the active scale and key  
-3. Update `final_notes.json` with the active note state  
-4. Map note states to 8 Geneva target positions  
-5. Read the current physical chime positions from `current_chime_position.json`  
-6. Calculate how many slots each chime set needs to rotate  
-7. Send movement commands over UART to the Pico  
-8. Read back the actual movement from the Pico  
-9. Update `current_chime_position.json`  
+Flash the produced UF2/firmware artifact to the Pico using your normal process.
 
----
+## Validation Checklist
 
-## main_backend.py
+After flashing:
 
-### Overview
+1. Send small moves (`1`, `2`, `4`) on a couple motors.
+2. Confirm Pico returns plausible `actual_slots_moved`.
+3. Run one full backend update and confirm mismatch rate is low.
+4. Watch for protocol errors (`-77`, `-88`) and investigate if seen.
 
-Main backend control module that determines control mode and updates the active note state.
+## Tuning Notes
 
-### Responsibilities
+If results are consistently short or noisy, tune in this order:
 
-- Loads the scale manager  
-- Loads the chime mapper  
-- Loads the weather mode mapper  
-- Checks for an active scheduled scale entry  
-- Updates `data/final_notes.json`  
-- Returns target Geneva positions  
+1. `SLOWDOWN_SLOTS` / near-target speed (only if needed under load).
+2. `FIRST_EDGE_TIMEOUT_MS` (if startup is slow).
+3. `NO_MOTION_TIMEOUT_MS` (if moves pause mid-travel).
+4. `SETTLE_TIME_MS` (if response is sent before mechanics fully settle).
 
-### Behavior
+## Troubleshooting
 
-#### Weather Mode
+### Pattern: Every command returns `0` quickly
 
-- Requires `weather_data`  
-- Uses `WeatherModeMapper`  
-- Retrieves a scale and key  
-- Updates note state via `ScaleManager`  
+Example:
+- requested: `4`, actual: `0`
+- similar response time each command
 
-#### User Mode
+Likely causes:
+- no encoder motion detected
+- first-edge timeout/no-motion timeout too aggressive
+- encoder wiring/noise/power issue
 
-- Checks `timetable_configs.json` first  
-- Uses scheduled entry if active  
-- Otherwise uses GUI selection  
-- Supports `"Custom"` scales  
+What to do:
+1. Increase `FIRST_EDGE_TIMEOUT_MS` (startup allowance).
+2. Verify encoder counts change while motor is physically moving.
+3. Check encoder pin mapping and pull-ups.
 
----
+### Pattern: Almost all commands return `N-1` (one short)
 
-## scale_manager.py
+Example:
+- requested: `4`, actual: `3`
+- requested: `2`, actual: `1`
 
-### Overview
+Likely causes:
+- slowdown near target is too aggressive
+- mechanism stalls in final slot region
 
-Handles scale selection and writes the active note state.
+What to do:
+1. Set `SLOWDOWN_SLOTS = 0` for no-load tests.
+2. If running under load, increase near-target speed or reduce slowdown window.
+3. Increase `NO_MOTION_TIMEOUT_MS` slightly if final slot is slow.
 
-### Responsibilities
+### Pattern: Random negative return values (for example `-19`)
 
-- Read from `data/chime_states.json`  
-- Update `data/final_notes.json`  
-- Handle keyed scales  
-- Handle custom note selections  
+Likely causes:
+- encoder direction reversal/noise/glitch during move
+- unstable signal integrity on one channel
 
----
+What to do:
+1. Inspect encoder channel wiring for that motor.
+2. Compare raw encoder counts while commanding a single known move.
+3. In backend, reject impossible values (`actual < 0` or far above expected) and retry.
 
-## chime_mapper.py
+### Pattern: Frequent `-77` responses
 
-### Overview
+Meaning:
+- Pico rejected malformed UART token.
 
-Maps note states to Geneva mechanism positions.
+What to do:
+1. Ensure Pi sends exactly newline-delimited integer tokens.
+2. Call clear (`c`) to resync parser/queue state.
+3. Check for mixed debug text accidentally written to UART.
 
-### Responsibilities
+### Pattern: Frequent `-88` responses
 
-- Read `final_notes.json`  
-- Group notes into 8 mechanical pairs  
-- Convert note states into target positions  
+Meaning:
+- Pico command queue is full.
 
-### Note Pairs
-
-- (C4, C#4)  
-- (D4, D#4)  
-- (E4, F4)  
-- (F#4, G4)  
-- (G#4, A4)  
-- (A#4, B4)  
-- (C5, C#5)  
-- (D5, D#5)  
-
-### Important
-
-This module returns **target positions only**.  
-It does **not** calculate motor movement.
-
----
-
-## current_chime_position.py
-
-### Overview
-
-Tracks and updates physical chime positions.
-
-### Responsibilities
-
-- Read `current_chime_position.json`  
-- Compare current vs target positions  
-- Calculate required movement  
-- Send UART commands  
-- Read actual movement  
-- Update saved positions  
-
----
-
-## uart_service.py
-
-### Overview
-
-Handles UART communication between Raspberry Pi and Pico.
-
-### Responsibilities
-
-- Connect to `/dev/serial0`  
-- Send motor commands  
-- Receive movement feedback  
-
-```markdown
-### Protocol
-
-**Pi → Pico**
-motor_number
-slots
-
-**Pico -> Pi**
-actual_slots_moved 
-```
----
-
-## weather_mode_mapper.py
-
-### Overview
-
-Maps weather API data to a scale and key.
-
-### Responsibilities
-
-- Parse OpenWeather API data  
-- Classify weather condition  
-- Bucket temperature ranges  
-- Generate lookup keys  
-- Return scale and key  
-
-### Notes
-
-- Uses configurable mappings  
-- Falls back to `Major / C` if needed  
-- Only selects scale/key (not notes)  
-
----
-
-## JSON Files
-
-### `data/chime_states.json`
-Stores available scale definitions.
-
-### `data/final_notes.json`
-Stores the currently active note state.
-
-### `current_chime_position.json`
-Stores current Geneva positions for each chime set.
-
-### `timetable_configs.json`
-Stores scheduled scale selections.
-
----
-
-## System Summary
-
-The backend converts musical intent into physical motion:
-
-Input (GUI / Weather)
-↓
-Scale Selection
-↓
-final_notes.json
-↓
-Chime Mapping
-↓
-Target Positions
-↓
-Compare with Current Positions
-↓
-UART → Pico
-↓
-Motor Movement
-↓
-Update Saved State
+What to do:
+1. Reduce burst rate of command sends.
+2. Wait for command completion before issuing more moves.
+3. Retry after current queue drains.
