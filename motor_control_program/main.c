@@ -15,8 +15,12 @@
 #endif
 
 #define COUNTS_PER_SLOT QUADRATURE_COUNTS_PER_GENEVA_SLOT
-#define SLOT_THRESHOLD_COUNTS 0
+#define SLOT_THRESHOLD_COUNTS 2
 #define MOVE_TIMEOUT_MS 60000
+#define NO_MOTION_TIMEOUT_MS 2500
+#define SETTLE_TIME_MS 120
+#define SETTLE_TIMEOUT_MS 1000
+#define SLOWDOWN_SLOTS 1
 
 #define UART_TOKEN_MAX_LEN 16
 #define CMD_QUEUE_SIZE 16
@@ -120,42 +124,58 @@ int32_t move_geneva_slots(motor_driver_t *m, encoder_t *enc, int32_t requested_s
     int32_t start_counts = encoder_get_position(enc);
     uint32_t start_edges = encoder_get_quad_edge_count(enc);
     int32_t start_slot = encoder_get_slot(enc, COUNTS_PER_SLOT, SLOT_THRESHOLD_COUNTS);
-    int32_t target_slot = requested_slots;
 
     printf("move_geneva_slots() START\n");
     printf("  start_counts    = %ld\n", (long)start_counts);
     printf("  start_quad_edges= %lu\n", (unsigned long)start_edges);
     printf("  start_slot      = %ld\n", (long)start_slot);
     printf("  requested_slots = %ld\n", (long)requested_slots);
-    printf("  target_slot     = %ld\n", (long)target_slot);
+    printf("  target_delta    = %ld\n", (long)requested_slots);
 
     motor_forward_full(m);
 
     uint32_t start_time = to_ms_since_boot(get_absolute_time());
+    uint32_t last_motion_time = start_time;
+    int32_t prev_counts = start_counts;
     uint32_t print_counter = 0;
 
     while (1) {
+        uint32_t now_ms = to_ms_since_boot(get_absolute_time());
         int32_t current_counts = encoder_get_position(enc);
         int32_t current_slot = encoder_get_slot(enc, COUNTS_PER_SLOT, SLOT_THRESHOLD_COUNTS);
+        int32_t moved_slots = current_slot - start_slot;
+        int32_t remaining_slots = requested_slots - moved_slots;
+
+        if (current_counts != prev_counts) {
+            last_motion_time = now_ms;
+            prev_counts = current_counts;
+        }
+
+        if (remaining_slots <= SLOWDOWN_SLOTS) {
+            // Slow down near target to reduce overshoot/coast.
+            motor_set_speed(m, 0.40f);
+        }
 
         if (print_counter % 500 == 0) {
-
-    int32_t debug_start_slot = encoder_get_slot(enc, COUNTS_PER_SLOT, SLOT_THRESHOLD_COUNTS);
-
-    printf("  loop: current_counts=%ld current_slot=%ld target_slot=%ld start_slot=%ld\n",
+    printf("  loop: current_counts=%ld current_slot=%ld moved=%ld remaining=%ld\n",
            (long)current_counts,
            (long)current_slot,
-           (long)target_slot,
-           (long)debug_start_slot);
+           (long)moved_slots,
+           (long)remaining_slots);
 }
 
-        if (current_slot >= target_slot) {
+        if (moved_slots >= requested_slots) {
             printf("  target reached\n");
             break;
         }
 
-        if (to_ms_since_boot(get_absolute_time()) - start_time > MOVE_TIMEOUT_MS) {
+        if (now_ms - start_time > MOVE_TIMEOUT_MS) {
             printf("  TIMEOUT in encoder loop\n");
+            break;
+        }
+
+        if (now_ms - last_motion_time > NO_MOTION_TIMEOUT_MS) {
+            printf("  NO_MOTION timeout in encoder loop\n");
             break;
         }
 
@@ -164,7 +184,30 @@ int32_t move_geneva_slots(motor_driver_t *m, encoder_t *enc, int32_t requested_s
     }
 
     motor_stop(m);
-    sleep_ms(10);
+
+    // Wait for encoder to settle after stop before reporting slots moved.
+    uint32_t settle_start = to_ms_since_boot(get_absolute_time());
+    uint32_t stable_since = settle_start;
+    int32_t settle_prev_counts = encoder_get_position(enc);
+    while (1) {
+        sleep_ms(5);
+        uint32_t now_ms = to_ms_since_boot(get_absolute_time());
+        int32_t counts_now = encoder_get_position(enc);
+
+        if (counts_now != settle_prev_counts) {
+            stable_since = now_ms;
+            settle_prev_counts = counts_now;
+        }
+
+        if (now_ms - stable_since >= SETTLE_TIME_MS) {
+            break;
+        }
+
+        if (now_ms - settle_start >= SETTLE_TIMEOUT_MS) {
+            printf("  settle timeout\n");
+            break;
+        }
+    }
 
     int32_t end_counts = encoder_get_position(enc);
     uint32_t end_edges = encoder_get_quad_edge_count(enc);
