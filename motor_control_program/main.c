@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include "uart_comm.h"
 
 #define GENEVA_SLOTS_PER_REV 6
@@ -72,6 +73,35 @@ bool queue_pop(motor_cmd_t *cmd)
     q_head = (q_head + 1) % CMD_QUEUE_SIZE;
     q_count--;
 
+    return true;
+}
+
+void queue_clear(void)
+{
+    q_head = 0;
+    q_tail = 0;
+    q_count = 0;
+}
+
+static bool parse_int_token_strict(const char *token, int32_t *out_value)
+{
+    if (token == NULL || token[0] == '\0') {
+        return false;
+    }
+
+    char *endptr = NULL;
+    errno = 0;
+    long parsed = strtol(token, &endptr, 10);
+
+    if (errno != 0 || endptr == token || *endptr != '\0') {
+        return false;
+    }
+
+    if (parsed < INT32_MIN || parsed > INT32_MAX) {
+        return false;
+    }
+
+    *out_value = (int32_t)parsed;
     return true;
 }
 
@@ -301,11 +331,25 @@ int main()
 
             if (state == WAIT_FIRST_TOKEN) {
 
-                if (strcmp(token, "a") == 0 || strcmp(token, "A") == 0) {
+                if (strcmp(token, "c") == 0 || strcmp(token, "C") == 0) {
+                    printf("CLEAR command received. Resetting parser and queue.\n");
+                    queue_clear();
+                    requested_motor = 0;
+                    requested_slots = 0;
+                    state = WAIT_FIRST_TOKEN;
+                    uart_comm_send_int(0);
+                } else if (strcmp(token, "a") == 0 || strcmp(token, "A") == 0) {
                     printf("Command A received. Next token should be motor number.\n");
                     state = WAIT_A_MOTOR;
                 } else {
-                    requested_motor = atoi(token);
+                    if (!parse_int_token_strict(token, &requested_motor)) {
+                        printf("Invalid first token (expected motor number): %s\n", token);
+                        requested_motor = 0;
+                        requested_slots = 0;
+                        state = WAIT_FIRST_TOKEN;
+                        uart_comm_send_int(-77);
+                        continue;
+                    }
                     printf("Motor number received first: %ld\n", (long)requested_motor);
                     state = WAIT_SLOT_COUNT;
                 }
@@ -313,7 +357,14 @@ int main()
 
             else if (state == WAIT_A_MOTOR) {
 
-                requested_motor = atoi(token);
+                if (!parse_int_token_strict(token, &requested_motor)) {
+                    printf("Invalid motor token after A: %s\n", token);
+                    requested_motor = 0;
+                    requested_slots = 0;
+                    state = WAIT_FIRST_TOKEN;
+                    uart_comm_send_int(-77);
+                    continue;
+                }
 
                 if (queue_push(requested_motor, 1)) {
                     printf("Queued one-slot command: motor=%ld slots=1\n",
@@ -330,7 +381,14 @@ int main()
 
             else if (state == WAIT_SLOT_COUNT) {
 
-                requested_slots = atoi(token);
+                if (!parse_int_token_strict(token, &requested_slots)) {
+                    printf("Invalid slot-count token: %s\n", token);
+                    requested_motor = 0;
+                    requested_slots = 0;
+                    state = WAIT_FIRST_TOKEN;
+                    uart_comm_send_int(-77);
+                    continue;
+                }
 
                 if (queue_push(requested_motor, requested_slots)) {
                     printf("Queued normal command: motor=%ld slots=%ld\n",
