@@ -18,7 +18,8 @@
 #define COUNTS_PER_SLOT QUADRATURE_COUNTS_PER_GENEVA_SLOT
 #define SLOT_THRESHOLD_COUNTS 2
 #define MOVE_TIMEOUT_MS 60000
-#define NO_MOTION_TIMEOUT_MS 2500
+#define FIRST_EDGE_TIMEOUT_MS 8000
+#define NO_MOTION_TIMEOUT_MS 3000
 #define SETTLE_TIME_MS 120
 #define SETTLE_TIMEOUT_MS 1000
 #define SLOWDOWN_SLOTS 1
@@ -167,6 +168,7 @@ int32_t move_geneva_slots(motor_driver_t *m, encoder_t *enc, int32_t requested_s
     uint32_t start_time = to_ms_since_boot(get_absolute_time());
     uint32_t last_motion_time = start_time;
     int32_t prev_counts = start_counts;
+    bool seen_motion = false;
     uint32_t print_counter = 0;
 
     while (1) {
@@ -179,6 +181,7 @@ int32_t move_geneva_slots(motor_driver_t *m, encoder_t *enc, int32_t requested_s
         if (current_counts != prev_counts) {
             last_motion_time = now_ms;
             prev_counts = current_counts;
+            seen_motion = true;
         }
 
         if (remaining_slots <= SLOWDOWN_SLOTS) {
@@ -204,9 +207,16 @@ int32_t move_geneva_slots(motor_driver_t *m, encoder_t *enc, int32_t requested_s
             break;
         }
 
-        if (now_ms - last_motion_time > NO_MOTION_TIMEOUT_MS) {
-            printf("  NO_MOTION timeout in encoder loop\n");
-            break;
+        if (!seen_motion) {
+            if (now_ms - start_time > FIRST_EDGE_TIMEOUT_MS) {
+                printf("  FIRST_EDGE timeout in encoder loop\n");
+                break;
+            }
+        } else {
+            if (now_ms - last_motion_time > NO_MOTION_TIMEOUT_MS) {
+                printf("  NO_MOTION timeout in encoder loop\n");
+                break;
+            }
         }
 
         print_counter++;
