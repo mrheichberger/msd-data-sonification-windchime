@@ -15,6 +15,9 @@ from serial.tools import list_ports
 import time
 import os
 
+PICO_ERROR_INVALID_TOKEN = -77
+PICO_ERROR_QUEUE_FULL = -88
+
 
 class UARTComm:
     def __init__(self, port=None, baudrate=115200, timeout=60):
@@ -104,6 +107,18 @@ class UARTComm:
             try:
                 value = int(decoded)
                 print(f"[UART] Parsed response: {value}")
+
+                if value == PICO_ERROR_INVALID_TOKEN:
+                    raise RuntimeError(
+                        "Pico rejected UART token (-77 invalid token). "
+                        "Command stream may be malformed or out of sync."
+                    )
+                if value == PICO_ERROR_QUEUE_FULL:
+                    raise RuntimeError(
+                        "Pico command queue full (-88). "
+                        "Retry after current moves finish."
+                    )
+
                 return value
             except ValueError:
                 print(f"[UART] Ignoring non-integer response: {decoded!r}")
@@ -135,7 +150,10 @@ class UARTComm:
 
         try:
             response = self.read_response()
-            print(f"[UART] Clear response: {response}")
+            if response == 0:
+                print("[UART] Clear acknowledged")
+            else:
+                print(f"[UART] Clear returned unexpected value: {response}")
         except Exception:
             print("[UART] No clear response received")
 
