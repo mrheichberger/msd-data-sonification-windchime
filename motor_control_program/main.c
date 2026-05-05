@@ -22,7 +22,7 @@
 #define NO_MOTION_TIMEOUT_MS 3000
 #define SETTLE_TIME_MS 120
 #define SETTLE_TIMEOUT_MS 1000
-#define SLOWDOWN_SLOTS 1
+#define SLOWDOWN_SLOTS 0
 
 #define UART_TOKEN_MAX_LEN 16
 #define CMD_QUEUE_SIZE 16
@@ -184,7 +184,7 @@ int32_t move_geneva_slots(motor_driver_t *m, encoder_t *enc, int32_t requested_s
             seen_motion = true;
         }
 
-        if (remaining_slots <= SLOWDOWN_SLOTS) {
+        if (SLOWDOWN_SLOTS > 0 && remaining_slots <= SLOWDOWN_SLOTS) {
             // Slow down near target to reduce overshoot/coast.
             motor_set_speed(m, 0.40f);
         }
