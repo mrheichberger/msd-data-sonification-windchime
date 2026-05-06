@@ -165,10 +165,10 @@ class TimetableConfigFrame(ctk.CTkFrame):
         for w in self.timeline.winfo_children():
             w.destroy()
 
-        if self.controller.selected_configuration is None:
+        if self.controller.timetable_index is None:
             return
 
-        config = self.configurations[self.controller.selected_configuration]
+        config = self.configurations[self.controller.timetable_index]
 
         sorted_entries = sorted(
             config["scales"],
@@ -209,7 +209,7 @@ class TimetableConfigFrame(ctk.CTkFrame):
     # =========================
     def select(self, i):
         print(f"[TIMETABLE] Selecting configuration index={i}")
-        self.controller.selected_configuration = i
+        self.controller.timetable_index = i
         self.refresh()
 
         chime_update(self.master)
@@ -232,14 +232,14 @@ class TimetableConfigFrame(ctk.CTkFrame):
     def delete_config(self, i):
         print(f"[TIMETABLE] Deleting configuration index={i}")
         del self.configurations[i]
-        self.controller.selected_configuration = None
+        self.controller.timetable_index = None
         self.save()
         self.refresh()
         chime_update(self.master)
 
     def delete_entry(self, index):
         print(f"[TIMETABLE] Deleting entry index={index}")
-        config = self.configurations[self.controller.selected_configuration]
+        config = self.configurations[self.controller.timetable_index]
 
         sorted_entries = sorted(
             enumerate(config["scales"]),

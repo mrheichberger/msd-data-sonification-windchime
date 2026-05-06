@@ -76,7 +76,7 @@ def chime_update(self):
         timetable_data = json.load(f)
     
     control_mode = self.current_mode 
-    current_config = self.selected_configuration
+    current_config = self.timetable_index
     
     print("[CHIME_UPDATE] Fetching weather")
     weather_data, _ = self.weather_service.fetch_weather()

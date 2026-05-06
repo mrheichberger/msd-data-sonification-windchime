@@ -31,6 +31,7 @@ class App(ctk.CTk):
 
         self.current_mode = "Weather Mode"
         self.selected_configuration = None
+        self.timetable_index = None
         self.selected_scale = None
         self.selected_key = None
         self.weather = {}
