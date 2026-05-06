@@ -141,7 +141,7 @@ class TimetableConfigFrame(ctk.CTkFrame):
             self.current_label.configure(text="None selected")
             '''
     def update_label(self):
-        selected = self.controller.selected_configuration
+        selected = self.controller.timetable_index
 
         if selected is None:
             self.current_label.configure(text="None selected")
